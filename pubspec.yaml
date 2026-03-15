@@ -1,0 +1,51 @@
+name: agro360
+description: Sistema de gerenciamento agropecuário Agro360
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Gerenciamento de estado e navegação
+  get: ^4.6.6
+  
+  # HTTP Client
+  dio: ^5.4.0
+  
+  # Banco de dados local
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  
+  # Armazenamento de dados simples (token, preferências)
+  shared_preferences: ^2.2.2
+  
+  # Verificação de conectividade
+  connectivity_plus: ^5.0.2
+  
+  # UI e ícones
+  cupertino_icons: ^1.0.2
+  
+  # Validação de formulários
+  validators: ^3.0.0
+  
+  # Formatação de datas
+  intl: ^0.18.1
+  
+  # Loading e feedback visual
+  flutter_spinkit: ^5.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/fonts/

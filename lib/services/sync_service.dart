@@ -8,10 +8,10 @@ class SyncService {
   final ApiService _apiService;
   final DatabaseService _databaseService;
   final Connectivity _connectivity = Connectivity();
-  
+
   bool _isSyncing = false;
   Timer? _autoSyncTimer;
-  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
   SyncService({
     required ApiService apiService,
@@ -19,52 +19,38 @@ class SyncService {
   })  : _apiService = apiService,
         _databaseService = databaseService;
 
-  /// Inicializa o serviço de sincronização
   Future<void> initialize() async {
-    // Monitorar mudanças de conectividade
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-      (List<ConnectivityResult> results) {
-        _onConnectivityChanged(results);
-      } as void Function(ConnectivityResult event)?,
-    ) as StreamSubscription<List<ConnectivityResult>>?;
+      (ConnectivityResult result) {
+        _onConnectivityChanged(result);
+      },
+    );
   }
 
-  /// Callback para mudanças de conectividade
-  void _onConnectivityChanged(List<ConnectivityResult> results) {
-    final isConnected = results.any((result) => 
-      result == ConnectivityResult.mobile || 
-      result == ConnectivityResult.wifi ||
-      result == ConnectivityResult.ethernet
-    );
-    
-    if (isConnected && !_isSyncing) {
-      // Quando conectar, sincronizar automaticamente
+  void _onConnectivityChanged(ConnectivityResult result) {
+    final hasInternet = result == ConnectivityResult.mobile ||
+        result == ConnectivityResult.wifi ||
+        result == ConnectivityResult.ethernet;
+
+    if (hasInternet && !_isSyncing) {
       syncAll();
     }
   }
 
-  /// Verifica se há conexão com a internet
-Future<bool> hasConnection() async {
-  final result = await _connectivity.checkConnectivity();
-  return result == ConnectivityResult.mobile ||
-         result == ConnectivityResult.wifi ||
-         result == ConnectivityResult.ethernet;
-}
+  Future<bool> hasConnection() async {
+    final result = await _connectivity.checkConnectivity();
+    return result == ConnectivityResult.mobile ||
+        result == ConnectivityResult.wifi ||
+        result == ConnectivityResult.ethernet;
+  }
 
-  /// Sincroniza todos os dados pendentes
   Future<SyncResult> syncAll() async {
     if (_isSyncing) {
-      return SyncResult(
-        success: false,
-        message: 'Sincronização já em andamento',
-      );
+      return SyncResult(success: false, message: 'Sincronização já em andamento');
     }
 
     if (!await hasConnection()) {
-      return SyncResult(
-        success: false,
-        message: 'Sem conexão com a internet',
-      );
+      return SyncResult(success: false, message: 'Sem conexão com a internet');
     }
 
     _isSyncing = true;
@@ -73,14 +59,9 @@ Future<bool> hasConnection() async {
       int syncedCount = 0;
       final errors = <String>[];
 
-      // Sincronizar usuários pendentes
       final unsyncedUsuarios = await _databaseService.getUnsyncedUsuarios();
       for (final usuario in unsyncedUsuarios) {
         try {
-          // Aqui você implementaria a lógica de envio para a API
-          // Por exemplo: await _apiService.updateUsuario(usuario);
-          
-          // Marcar como sincronizado
           usuario.synced = true;
           usuario.updatedAt = DateTime.now();
           await _databaseService.saveUsuario(usuario);
@@ -102,26 +83,17 @@ Future<bool> hasConnection() async {
       );
     } catch (e) {
       _isSyncing = false;
-      return SyncResult(
-        success: false,
-        message: 'Erro na sincronização: $e',
-      );
+      return SyncResult(success: false, message: 'Erro na sincronização: $e');
     }
   }
 
-  /// Busca dados atualizados da API e salva localmente
   Future<SyncResult> pullFromServer() async {
     if (!await hasConnection()) {
-      return SyncResult(
-        success: false,
-        message: 'Sem conexão com a internet',
-      );
+      return SyncResult(success: false, message: 'Sem conexão com a internet');
     }
 
     try {
       int downloadedCount = 0;
-
-      // Buscar usuários ativos da API
       final usuarios = await _apiService.getUsuariosAtivos();
       for (final usuario in usuarios) {
         await _databaseService.saveUsuario(usuario);
@@ -134,17 +106,12 @@ Future<bool> hasConnection() async {
         syncedCount: downloadedCount,
       );
     } catch (e) {
-      return SyncResult(
-        success: false,
-        message: 'Erro ao baixar dados: $e',
-      );
+      return SyncResult(success: false, message: 'Erro ao baixar dados: $e');
     }
   }
 
-  /// Inicia sincronização automática periódica
   void startAutoSync({Duration interval = const Duration(minutes: 15)}) {
-    stopAutoSync(); // Para timer anterior se existir
-    
+    _autoSyncTimer?.cancel();
     _autoSyncTimer = Timer.periodic(interval, (timer) async {
       if (await hasConnection()) {
         await syncAll();
@@ -152,23 +119,19 @@ Future<bool> hasConnection() async {
     });
   }
 
-  /// Para sincronização automática
   void stopAutoSync() {
     _autoSyncTimer?.cancel();
     _autoSyncTimer = null;
   }
 
-  /// Verifica se está sincronizando
   bool get isSyncing => _isSyncing;
 
-  /// Libera recursos
   void dispose() {
     stopAutoSync();
     _connectivitySubscription?.cancel();
   }
 }
 
-/// Resultado de uma operação de sincronização
 class SyncResult {
   final bool success;
   final String message;

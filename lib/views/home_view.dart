@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/sync_controller.dart';
+import '../utils/app_colors.dart';
+import '../utils/cow_head_icon.dart';
 
-/// Tela Home
+/// Tela Home - Design moderno com paleta Agro360
 class HomeView extends GetView<AuthController> {
   const HomeView({super.key});
 
@@ -12,9 +14,19 @@ class HomeView extends GetView<AuthController> {
     final syncController = Get.find<SyncController>();
 
     return Scaffold(
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Agro360'),
-        backgroundColor: Colors.green.shade700,
+        title: const Text(
+          'Agro360',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           // Botão de sincronização
           Obx(() {
@@ -41,7 +53,7 @@ class HomeView extends GetView<AuthController> {
                   : 'Offline',
             );
           }),
-          
+
           // Menu de opções
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -100,70 +112,96 @@ class HomeView extends GetView<AuthController> {
               if (user == null) {
                 return const SizedBox.shrink();
               }
-              
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: AppColors.cardGradient,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppColors.primary,
+                      radius: 24,
+                      child: Text(
+                        user.nomePessoa.isNotEmpty
+                            ? user.nomePessoa[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.green.shade700,
-                            child: Text(
-                              user.nomePessoa[0].toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          Text(
+                            user.nomePessoa,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user.nomePessoa,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '@${user.nomeUsuario}',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
+                          const SizedBox(height: 2),
+                          Text(
+                            '@${user.nomeUsuario}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                          if (user.isAdmin)
-                            Chip(
-                              label: const Text(
-                                'Admin',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              backgroundColor: Colors.green.shade100,
-                            ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    if (user.isAdmin)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          'Admin',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               );
             }),
-            const SizedBox(height: 24),
-            
-            // Título
-            Text(
-              'Menu Principal',
-              style: Theme.of(context).textTheme.headlineSmall,
+            const SizedBox(height: 20),
+
+            // Título do menu
+            Row(
+              children: [
+                Icon(Icons.grid_view, color: AppColors.primary, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Menu Principal',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-            
+
             // Grid de opções
             Expanded(
               child: GridView.count(
@@ -174,49 +212,59 @@ class HomeView extends GetView<AuthController> {
                   _buildMenuCard(
                     icon: Icons.people,
                     title: 'Pessoas',
-                    color: Colors.blue,
+                    color: AppColors.primary,
                     onTap: () {
-                      Get.snackbar('Em desenvolvimento', 'Funcionalidade em breve');
+                      Get.snackbar(
+                          'Em desenvolvimento', 'Funcionalidade em breve');
                     },
                   ),
                   _buildMenuCard(
                     icon: Icons.pets,
                     title: 'Animais',
-                    color: Colors.orange,
+                    color: Colors.brown.shade600,
                     onTap: () {
-                      Get.snackbar('Em desenvolvimento', 'Funcionalidade em breve');
+                      Get.toNamed('/animais');
                     },
                   ),
                   _buildMenuCard(
+                    icon: Icons.eco,
+                    title: 'Raças',
+                    color: Colors.amber.shade700,
+                    onTap: () {
+                      Get.toNamed('/racas');
+                    },
+                    customIcon: const CowHeadIcon(size: 30),
+                  ),
+_buildMenuCard(
                     icon: Icons.landscape,
                     title: 'Propriedades',
-                    color: Colors.green,
+                    color: Colors.teal.shade700,
                     onTap: () {
-                      Get.snackbar('Em desenvolvimento', 'Funcionalidade em breve');
+                      Get.toNamed('/propriedades');
                     },
                   ),
                   _buildMenuCard(
                     icon: Icons.medical_services,
                     title: 'Manejos',
-                    color: Colors.red,
+                    color: Colors.orange.shade700,
                     onTap: () {
-                      Get.snackbar('Em desenvolvimento', 'Funcionalidade em breve');
+                      Get.toNamed('/manejos');
                     },
                   ),
                   _buildMenuCard(
                     icon: Icons.monitor_weight,
                     title: 'Pesagens',
-                    color: Colors.purple,
+                    color: Colors.blue.shade700,
                     onTap: () {
-                      Get.snackbar('Em desenvolvimento', 'Funcionalidade em breve');
+                      Get.toNamed('/pesagens');
                     },
                   ),
                   _buildMenuCard(
                     icon: Icons.vaccines,
                     title: 'Vacinações',
-                    color: Colors.teal,
+                    color: Colors.red.shade700,
                     onTap: () {
-                      Get.snackbar('Em desenvolvimento', 'Funcionalidade em breve');
+                      Get.toNamed('/vacinacoes');
                     },
                   ),
                 ],
@@ -233,33 +281,56 @@ class HomeView extends GetView<AuthController> {
     required String title,
     required Color color,
     required VoidCallback onTap,
+    Widget? customIcon,
   }) {
     return Card(
-      elevation: 4,
+      elevation: 2,
+      shadowColor: AppColors.shadowLight,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: color,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withValues(alpha: 0.15),
+                color.withValues(alpha: 0.05),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: customIcon ?? Icon(
+                  icon,
+                  size: 32,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -268,7 +339,13 @@ class HomeView extends GetView<AuthController> {
   void _showLogoutDialog(BuildContext context) {
     Get.dialog(
       AlertDialog(
-        title: const Text('Sair'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Sair',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: const Text('Deseja realmente sair do aplicativo?'),
         actions: [
           TextButton(
@@ -282,7 +359,7 @@ class HomeView extends GetView<AuthController> {
             },
             child: const Text(
               'Sair',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],

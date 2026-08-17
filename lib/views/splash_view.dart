@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../utils/app_logo.dart';
+import '../utils/app_colors.dart';
 
-/// Tela Splash - Tela inicial de carregamento
+/// Tela Splash - tela inicial de carregamento
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
 
@@ -18,14 +20,9 @@ class _SplashViewState extends State<SplashView> {
   }
 
   Future<void> _checkAuth() async {
-    // Aguardar 2 segundos para exibir splash
     await Future.delayed(const Duration(seconds: 2));
-
-    // Verificar autenticação
     final authController = Get.find<AuthController>();
     await authController.checkAuthStatus();
-
-    // Navegar para tela apropriada
     if (authController.isAuthenticated.value) {
       Get.offAllNamed('/home');
     } else {
@@ -37,25 +34,18 @@ class _SplashViewState extends State<SplashView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.green.shade700,
-              Colors.green.shade500,
-            ],
+            colors: [AppColors.primaryDark, AppColors.primary],
           ),
         ),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.agriculture,
-                size: 120,
-                color: Colors.white,
-              ),
+              const Agro360LogoLogin(size: 140),
               const SizedBox(height: 24),
               const Text(
                 'Agro360',
@@ -63,14 +53,15 @@ class _SplashViewState extends State<SplashView> {
                   fontSize: 42,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  letterSpacing: 1.5,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Gerenciamento Agropecuário',
                 style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 15,
+                  color: Colors.white.withValues(alpha: 0.85),
                 ),
               ),
               const SizedBox(height: 48),

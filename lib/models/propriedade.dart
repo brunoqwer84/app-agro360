@@ -1,10 +1,13 @@
+import '../models/pessoa.dart';
+
 /// Model de Propriedade
 /// Corresponde à entidade Propriedade do backend
 class Propriedade {
   final int idPropriedade;
   final String nome;
   final bool ativo;
-  final int idPessoa;
+  final Pessoa? pessoa;
+  final int idPessoa; // helper para compatibilidade
   bool synced;
   DateTime? updatedAt;
 
@@ -12,10 +15,11 @@ class Propriedade {
     required this.idPropriedade,
     required this.nome,
     required this.ativo,
-    required this.idPessoa,
+    this.pessoa,
+    int? idPessoa,
     this.synced = false,
     this.updatedAt,
-  });
+  }) : idPessoa = idPessoa ?? pessoa?.idPessoa ?? 0;
 
   /// Cria instância a partir de JSON da API
   factory Propriedade.fromJson(Map<String, dynamic> json) {
@@ -23,7 +27,7 @@ class Propriedade {
       idPropriedade: json['idPropriedade'] as int,
       nome: json['nome'] as String,
       ativo: json['ativo'] as bool,
-      idPessoa: json['idPessoa'] as int,
+      pessoa: json['pessoa'] != null ? Pessoa.fromJson(json['pessoa']) : null,
       synced: true,
       updatedAt: DateTime.now(),
     );
@@ -46,7 +50,6 @@ class Propriedade {
   /// Converte para JSON
   Map<String, dynamic> toJson() {
     return {
-      'idPropriedade': idPropriedade,
       'nome': nome,
       'ativo': ativo,
       'idPessoa': idPessoa,

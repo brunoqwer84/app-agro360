@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/login_request.dart';
+import '../models/first_access_request.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
@@ -16,6 +17,7 @@ class AuthController extends GetxController {
   final isAuthenticated = false.obs;
   final Rx<Usuario?> currentUser = Rx<Usuario?>(null);
   final errorMessage = ''.obs;
+  final isSuccess = false.obs;
 
   @override
   void onInit() {
@@ -119,6 +121,31 @@ class AuthController extends GetxController {
         (u) => u.nomeUsuario == username,
       );
       currentUser.value = usuario;
+    }
+  }
+
+  /// Realiza o primeiro acesso (cadastro de Pessoa + Usuário)
+  /// Retorna true em caso de sucesso.
+  Future<bool> register(FirstAccessRequest request) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+      isSuccess.value = false;
+
+      final response = await _apiService.firstAccess(request);
+
+      if (response.sucesso) {
+        isSuccess.value = true;
+        return true;
+      } else {
+        errorMessage.value = response.mensagem;
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 

@@ -22,7 +22,13 @@ class AuthController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _apiService.setOnTokenExpired(_onTokenExpired);
     checkAuthStatus();
+  }
+
+  void _onTokenExpired() {
+    // Token expirou - fazer logout e redirecionar para login
+    logout();
   }
 
   /// Verifica se o usuário já está autenticado
@@ -76,7 +82,7 @@ class AuthController extends GetxController {
       );
 
       // Fazer login na API
-      final authResponse = await _apiService.login(request);
+      await _apiService.login(request);
 
       // Salvar informações do usuário
       final prefs = await SharedPreferences.getInstance();

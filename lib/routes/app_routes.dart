@@ -15,5 +15,7 @@ class AppRoutes {
   static const String pesagensForm = '/pesagens/form';
   static const String vacinacoes = '/vacinacoes';
   static const String vacinacoesForm = '/vacinacoes/form';
+  static const String grupos = '/grupos';
+  static const String gruposForm = '/grupos/form';
   static const String home = '/home';
 }

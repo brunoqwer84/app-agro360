@@ -1,4 +1,4 @@
-import '../models/pessoa.dart';
+import 'grupo.dart';
 
 /// Model de Propriedade
 /// Corresponde à entidade Propriedade do backend
@@ -6,8 +6,7 @@ class Propriedade {
   final int idPropriedade;
   final String nome;
   final bool ativo;
-  final Pessoa? pessoa;
-  final int idPessoa; // helper para compatibilidade
+  final Grupo? grupo;
   bool synced;
   DateTime? updatedAt;
 
@@ -15,11 +14,10 @@ class Propriedade {
     required this.idPropriedade,
     required this.nome,
     required this.ativo,
-    this.pessoa,
-    int? idPessoa,
+    this.grupo,
     this.synced = false,
     this.updatedAt,
-  }) : idPessoa = idPessoa ?? pessoa?.idPessoa ?? 0;
+  });
 
   /// Cria instância a partir de JSON da API
   factory Propriedade.fromJson(Map<String, dynamic> json) {
@@ -27,7 +25,7 @@ class Propriedade {
       idPropriedade: json['idPropriedade'] as int,
       nome: json['nome'] as String,
       ativo: json['ativo'] as bool,
-      pessoa: json['pessoa'] != null ? Pessoa.fromJson(json['pessoa']) : null,
+      grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : null,
       synced: true,
       updatedAt: DateTime.now(),
     );
@@ -39,7 +37,7 @@ class Propriedade {
       idPropriedade: map['id_propriedade'] as int,
       nome: map['nome'] as String,
       ativo: (map['ativo'] as int) == 1,
-      idPessoa: map['id_pessoa'] as int,
+      grupo: map['id_grupo'] != null ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true) : null,
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
@@ -52,7 +50,6 @@ class Propriedade {
     return {
       'nome': nome,
       'ativo': ativo,
-      'idPessoa': idPessoa,
     };
   }
 
@@ -62,7 +59,7 @@ class Propriedade {
       'id_propriedade': idPropriedade,
       'nome': nome,
       'ativo': ativo ? 1 : 0,
-      'id_pessoa': idPessoa,
+      'id_grupo': grupo?.idGrupo,
       'synced': synced ? 1 : 0,
       'updated_at': updatedAt?.toIso8601String(),
     };

@@ -21,9 +21,10 @@ class RacaController extends GetxController {
       isLoading.value = true;
       final lista = await _apiService.getAllRacas();
       racas.assignAll(lista);
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar raças',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -38,9 +39,10 @@ class RacaController extends GetxController {
       isLoading.value = true;
       final lista = await _apiService.searchRacas(descricao);
       racas.assignAll(lista);
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível buscar raças',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -55,9 +57,11 @@ class RacaController extends GetxController {
       Get.snackbar('Sucesso', 'Raça criada com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
+      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -75,9 +79,11 @@ class RacaController extends GetxController {
       Get.snackbar('Sucesso', 'Raça atualizada com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
+      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -91,9 +97,10 @@ class RacaController extends GetxController {
       racas.removeWhere((r) => r.idRaca == id);
       Get.snackbar('Sucesso', 'Raça deletada',
           snackPosition: SnackPosition.BOTTOM);
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

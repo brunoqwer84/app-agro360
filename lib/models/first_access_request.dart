@@ -1,5 +1,5 @@
 /// Model para requisição de primeiro acesso
-/// Cria Pessoa + Usuário em uma única transação no backend
+/// Cria Grupo + Pessoa + Usuário em uma única transação no backend
 class FirstAccessRequest {
   final String nome;
   final String cpfCnpj;
@@ -7,6 +7,10 @@ class FirstAccessRequest {
   final String email;
   final String nomeUsuario;
   final String senha;
+  final int? idGrupo;
+  final String? nomeGrupo;
+  final String? cnpjGrupo;
+  final String? nomePropriedade;
 
   FirstAccessRequest({
     required this.nome,
@@ -15,6 +19,10 @@ class FirstAccessRequest {
     required this.email,
     required this.nomeUsuario,
     required this.senha,
+    this.idGrupo,
+    this.nomeGrupo,
+    this.cnpjGrupo,
+    this.nomePropriedade,
   });
 
   Map<String, dynamic> toJson() {
@@ -25,6 +33,10 @@ class FirstAccessRequest {
       'email': email,
       'nomeUsuario': nomeUsuario,
       'senha': senha,
+      'idGrupo': idGrupo,
+      'nomeGrupo': nomeGrupo,
+      'cnpjGrupo': cnpjGrupo,
+      'nomePropriedade': nomePropriedade,
     };
   }
 
@@ -44,6 +56,7 @@ class FirstAccessResponse {
   final int? idPessoa;
   final int? idUsuario;
   final String? nomeUsuario;
+  final int? idGrupo;
 
   FirstAccessResponse({
     required this.sucesso,
@@ -51,6 +64,7 @@ class FirstAccessResponse {
     this.idPessoa,
     this.idUsuario,
     this.nomeUsuario,
+    this.idGrupo,
   });
 
   factory FirstAccessResponse.fromJson(Map<String, dynamic> json) {
@@ -60,6 +74,7 @@ class FirstAccessResponse {
       idPessoa: json['idPessoa'] != null ? (json['idPessoa'] as num).toInt() : null,
       idUsuario: json['idUsuario'] != null ? (json['idUsuario'] as num).toInt() : null,
       nomeUsuario: json['nomeUsuario'] as String?,
+      idGrupo: json['idGrupo'] != null ? (json['idGrupo'] as num).toInt() : null,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/grupo_controller.dart';
 import '../controllers/sync_controller.dart';
 import '../controllers/propriedade_controller.dart';
 import '../controllers/raca_controller.dart';
@@ -17,6 +18,7 @@ class InitialBinding extends Bindings {
     Get.lazyPut<ApiService>(() => ApiService(), fenix: true);
     Get.lazyPut<DatabaseService>(() => DatabaseService(), fenix: true);
     Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
+    Get.lazyPut<GrupoController>(() => GrupoController(), fenix: true);
     Get.lazyPut<SyncController>(() => SyncController(), fenix: true);
     Get.lazyPut<PropriedadeController>(() => PropriedadeController(), fenix: true);
     Get.lazyPut<RacaController>(() => RacaController(), fenix: true);

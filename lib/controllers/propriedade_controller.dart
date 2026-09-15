@@ -16,15 +16,16 @@ class PropriedadeController extends GetxController {
     loadAll();
   }
 
-  /// Carrega todas as propriedades
+  /// Carrega todas as propriedades (minhas propriedades - filtradas por usuário)
   Future<void> loadAll() async {
     try {
       isLoading.value = true;
-      final lista = await _apiService.getAllPropriedades();
+      final lista = await _apiService.getMinhasPropriedades();
       properties.assignAll(lista);
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar propriedades',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -36,9 +37,10 @@ class PropriedadeController extends GetxController {
       isLoading.value = true;
       final lista = await _apiService.getPropriedadesAtivas();
       properties.assignAll(lista);
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar propriedades ativas',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -50,20 +52,22 @@ class PropriedadeController extends GetxController {
       isLoading.value = true;
       final created = await _apiService.createPropriedade(propriedade);
       properties.add(created);
-      Get.back(); // fecha o form
+      Get.back();
       Get.snackbar('Sucesso', 'Propriedade criada com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
+      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Atualiza propriedade existente
+/// Atualiza propriedade existente
   Future<bool> updatePropriedade(int id, Propriedade propriedade) async {
     try {
       isLoading.value = true;
@@ -71,13 +75,15 @@ class PropriedadeController extends GetxController {
       final idx = properties.indexWhere((p) => p.idPropriedade == id);
       if (idx >= 0) properties[idx] = updated;
       selectedPropriedade.value = updated;
-      Get.back(); // fecha o form
+      Get.back();
       Get.snackbar('Sucesso', 'Propriedade atualizada com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
+      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -92,9 +98,10 @@ class PropriedadeController extends GetxController {
       properties.removeWhere((p) => p.idPropriedade == id);
       Get.snackbar('Sucesso', 'Propriedade deletada',
             snackPosition: SnackPosition.BOTTOM);
+    } on String catch (e) {
+      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

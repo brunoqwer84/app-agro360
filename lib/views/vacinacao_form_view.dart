@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/vacinacao_controller.dart';
 import '../controllers/manejo_controller.dart';
 import '../models/vacinacao.dart';
+import '../models/manejo.dart';
 import '../utils/app_colors.dart';
 
 /// Formulário de Vacinação (criar/editar)
@@ -23,7 +24,7 @@ class VacinacaoFormView extends GetView<VacinacaoController> {
     final manejoController = Get.find<ManejoController>();
     final nomeController = TextEditingController(text: args?.nome ?? '');
 
-    Future<void> _selectDate() async {
+    Future<void> selectDate() async {
       final picked = await showDatePicker(
         context: context,
         locale: const Locale('pt', 'BR'),
@@ -55,7 +56,7 @@ class VacinacaoFormView extends GetView<VacinacaoController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Obx(() => DropdownButtonFormField<int>(
-                    value: idManejo.value > 0 ? idManejo.value : null,
+                    initialValue: idManejo.value > 0 ? idManejo.value : null,
                     decoration: _inputDecoration(
                       label: 'Manejo*',
                       hint: 'Selecione',
@@ -98,7 +99,7 @@ class VacinacaoFormView extends GetView<VacinacaoController> {
               const SizedBox(height: 16),
 
               Obx(() => InkWell(
-                    onTap: _selectDate,
+                    onTap: selectDate,
                     child: InputDecorator(
                       decoration: _inputDecoration(
                         label: 'Próxima Dose*',
@@ -113,30 +114,36 @@ class VacinacaoFormView extends GetView<VacinacaoController> {
                   )),
               const SizedBox(height: 24),
 
-              Obx(() => Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.value
-                              ? null
-                              : () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final vacinacao = Vacinacao(
-                                      idVacinacao: isEdit ? args.idVacinacao : 0,
-                                      idManejo: idManejo.value,
-                                      nome: nome.value.trim(),
-                                      proximaDose: proximaDose.value,
-                                    );
-                                    if (isEdit) {
-                                      await controller.updateVacinacao(
-                                          args.idVacinacao, vacinacao);
-                                    } else {
-                                      await controller.create(vacinacao);
+Obx(() => Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : () async {
+                                    if (formKey.currentState!.validate()) {
+                                      final manejoSelecionado = manejoController.manejos
+                                          .firstWhere((m) => m.idManejo == idManejo.value);
+                                      final vacinacao = Vacinacao(
+                                        idVacinacao: isEdit ? args.idVacinacao : 0,
+                                        manejo: Manejo(
+                                          idManejo: manejoSelecionado.idManejo,
+                                          tipo: manejoSelecionado.tipo,
+                                          data: manejoSelecionado.data,
+                                        ),
+                                        nome: nome.value.trim(),
+                                        proximaDose: proximaDose.value,
+                                      );
+                                      if (isEdit) {
+                                        await controller.updateVacinacao(
+                                            args.idVacinacao, vacinacao);
+                                      } else {
+                                        await controller.create(vacinacao);
+                                      }
                                     }
-                                  }
-                                },
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -169,7 +176,7 @@ class VacinacaoFormView extends GetView<VacinacaoController> {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: Text(
+                        child: const Text(
                           'Cancelar',
                           style: TextStyle(color: AppColors.primary),
                         ),

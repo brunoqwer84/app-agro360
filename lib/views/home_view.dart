@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/sync_controller.dart';
+import '../routes/app_routes.dart';
 import '../utils/app_colors.dart';
 import '../utils/cow_head_icon.dart';
+import '../widgets/sidebar_navigation.dart';
+import '../widgets/app_components.dart';
+import '../theme/app_theme.dart';
 
-/// Tela Home - Design moderno com paleta Agro360
+/// Tela Home - Layout com sidebar lateral (desktop) ou drawer (mobile)
 class HomeView extends GetView<AuthController> {
   const HomeView({super.key});
 
@@ -13,261 +17,91 @@ class HomeView extends GetView<AuthController> {
   Widget build(BuildContext context) {
     final syncController = Get.find<SyncController>();
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 800;
+
+        if (isDesktop) {
+          return _buildDesktopLayout(syncController);
+        } else {
+          return _buildMobileLayout(syncController);
+        }
+      },
+    );
+  }
+
+  Widget _buildDesktopLayout(SyncController syncController) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: const Text(
-          'Agro360',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: Colors.white,
+      body: Row(
+        children: [
+          // Sidebar
+          const SidebarNavigation(
+            selectedIndex: 0,
           ),
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          // Botão de sincronização
-          Obx(() {
-            return IconButton(
-              icon: syncController.isSyncing.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Icon(
-                      syncController.isConnected.value
-                          ? Icons.cloud_done
-                          : Icons.cloud_off,
-                    ),
-              onPressed: syncController.isSyncing.value
-                  ? null
-                  : () => syncController.syncAll(),
-              tooltip: syncController.isConnected.value
-                  ? 'Online - Sincronizar'
-                  : 'Offline',
-            );
-          }),
 
-          // Menu de opções
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'logout') {
-                _showLogoutDialog(context);
-              } else if (value == 'sync') {
-                syncController.syncAll();
-              } else if (value == 'pull') {
-                syncController.pullFromServer();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'sync',
-                child: Row(
-                  children: [
-                    Icon(Icons.sync),
-                    SizedBox(width: 8),
-                    Text('Sincronizar'),
+          // Conteúdo principal
+          Expanded(
+            child: Scaffold(
+              backgroundColor: AppColors.surface,
+              appBar: _buildAppBar(syncController),
+              body: RefreshIndicator(
+                onRefresh: () => syncController.syncAll(),
+                child: CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          // Informações do usuário
+                          _buildUserProfile(),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // Cards de resumo
+                          _buildSummaryCards(),
+                          const SizedBox(height: AppSpacing.xl),
+
+                          // Ações rápidas
+                          _buildQuickActions(),
+                        ]),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'pull',
-                child: Row(
-                  children: [
-                    Icon(Icons.cloud_download),
-                    SizedBox(width: 8),
-                    Text('Baixar dados'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Sair'),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Informações do usuário
-            Obx(() {
-              final user = controller.currentUser.value;
-              if (user == null) {
-                return const SizedBox.shrink();
-              }
+    );
+  }
 
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: AppColors.cardGradient,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: AppColors.primary,
-                      radius: 24,
-                      child: Text(
-                        user.nomePessoa.isNotEmpty
-                            ? user.nomePessoa[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.nomePessoa,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '@${user.nomeUsuario}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (user.isAdmin)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryContainer,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Admin',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 20),
+  Widget _buildMobileLayout(SyncController syncController) {
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      appBar: _buildAppBar(syncController),
+      drawer: const SidebarNavigation(
+        selectedIndex: 0,
+      ),
+      body: RefreshIndicator(
+        onRefresh: () => syncController.syncAll(),
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  // Informações do usuário
+                  _buildUserProfile(),
+                  const SizedBox(height: AppSpacing.xl),
 
-            // Título do menu
-            Row(
-              children: [
-                Icon(Icons.grid_view, color: AppColors.primary, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Menu Principal',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+                  // Cards de resumo
+                  _buildSummaryCards(),
+                  const SizedBox(height: AppSpacing.xl),
 
-            // Grid de opções
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildMenuCard(
-                    icon: Icons.people,
-                    title: 'Pessoas',
-                    color: AppColors.primary,
-                    onTap: () {
-                      Get.snackbar(
-                          'Em desenvolvimento', 'Funcionalidade em breve');
-                    },
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.pets,
-                    title: 'Animais',
-                    color: Colors.brown.shade600,
-                    onTap: () {
-                      Get.toNamed('/animais');
-                    },
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.eco,
-                    title: 'Raças',
-                    color: Colors.amber.shade700,
-                    onTap: () {
-                      Get.toNamed('/racas');
-                    },
-                    customIcon: const CowHeadIcon(size: 30),
-                  ),
-_buildMenuCard(
-                    icon: Icons.landscape,
-                    title: 'Propriedades',
-                    color: Colors.teal.shade700,
-                    onTap: () {
-                      Get.toNamed('/propriedades');
-                    },
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.medical_services,
-                    title: 'Manejos',
-                    color: Colors.orange.shade700,
-                    onTap: () {
-                      Get.toNamed('/manejos');
-                    },
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.monitor_weight,
-                    title: 'Pesagens',
-                    color: Colors.blue.shade700,
-                    onTap: () {
-                      Get.toNamed('/pesagens');
-                    },
-                  ),
-                  _buildMenuCard(
-                    icon: Icons.vaccines,
-                    title: 'Vacinações',
-                    color: Colors.red.shade700,
-                    onTap: () {
-                      Get.toNamed('/vacinacoes');
-                    },
-                  ),
-                ],
+                  // Ações rápidas
+                  _buildQuickActions(),
+                ]),
               ),
             ),
           ],
@@ -276,90 +110,406 @@ _buildMenuCard(
     );
   }
 
-  Widget _buildMenuCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-    Widget? customIcon,
-  }) {
-    return Card(
-      elevation: 2,
-      shadowColor: AppColors.shadowLight,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withValues(alpha: 0.15),
-                color.withValues(alpha: 0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: customIcon ?? Icon(
-                  icon,
-                  size: 32,
-                  color: color,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
+  PreferredSizeWidget _buildAppBar(SyncController syncController) {
+    return AppBar(
+      title: const Text(
+        'Dashboard',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      elevation: 0,
+      actions: [
+        // Botão de sincronização
+        Obx(() {
+          return IconButton(
+            icon: syncController.isSyncing.value
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Icon(
+                    syncController.isConnected.value
+                        ? Icons.cloud_done
+                        : Icons.cloud_off,
+                  ),
+            onPressed: syncController.isSyncing.value
+                ? null
+                : () => syncController.syncAll(),
+            tooltip: syncController.isConnected.value
+                ? 'Online - Sincronizar'
+                : 'Offline',
+          );
+        }),
+        const SizedBox(width: AppSpacing.sm),
+      ],
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+  Widget _buildUserProfile() {
+    return Obx(() {
+      final user = controller.currentUser.value;
+      if (user == null) return const SizedBox.shrink();
+
+      return AppCard(
+        padding: AppSpacing.lg,
+        gradient: AppColors.cardGradient,
+        border: Border.all(color: AppColors.divider),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: AppColors.primary,
+              radius: 32,
+              child: Text(
+                user.nomePessoa.isNotEmpty
+                    ? user.nomePessoa[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user.nomePessoa,
+                    style: Theme.of(Get.context!).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '@${user.nomeUsuario}',
+                    style: Theme.of(Get.context!).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (user.isAdmin)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.round),
+                ),
+                child: const Text(
+                  'Admin',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryDark,
+                  ),
+                ),
+              ),
+          ],
         ),
-        title: const Text(
-          'Sair',
-          style: TextStyle(fontWeight: FontWeight.bold),
+      );
+    });
+  }
+
+  Widget _buildSummaryCards() {
+    return Obx(() {
+      final user = controller.currentUser.value;
+      final syncController = Get.find<SyncController>();
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth < 700 ? 2 : 4;
+          return GridView.count(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
+            childAspectRatio: 2.0,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _SummaryCard(
+                title: 'Grupo',
+                value: user?.grupo?.nome ?? 'N/A',
+                icon: Icons.business,
+                color: AppColors.primary,
+                trend: null,
+              ),
+              _SummaryCard(
+                title: 'Propriedades',
+                value: '0',
+                icon: Icons.landscape,
+                color: Colors.teal.shade700,
+                trend: null,
+              ),
+              _SummaryCard(
+                title: 'Animais',
+                value: '0',
+                icon: Icons.pets,
+                color: Colors.brown.shade600,
+                trend: null,
+              ),
+              _SummaryCard(
+                title: 'Sincronização',
+                value: syncController.isConnected.value ? 'Online' : 'Offline',
+                icon: Icons.cloud,
+                color: syncController.isConnected.value
+                    ? Colors.green.shade700
+                    : Colors.red.shade700,
+                trend: syncController.isConnected.value ? 'Conectado' : 'Sem conexão',
+              ),
+            ],
+          );
+        },
+      );
+    });
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.flash_on_outlined, color: AppColors.primary, size: 24),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(
+                'Ações Rápidas',
+                style: Theme.of(Get.context!).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        content: const Text('Deseja realmente sair do aplicativo?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancelar'),
+        const SizedBox(height: AppSpacing.md),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth < 600
+                ? 3
+                : constraints.maxWidth < 900
+                    ? 4
+                    : constraints.maxWidth < 1200
+                        ? 5
+                        : 6;
+            return GridView.count(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: AppSpacing.sm,
+              mainAxisSpacing: AppSpacing.sm,
+              childAspectRatio: 1.4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _ActionCard(
+                  icon: Icons.business_outlined,
+                  title: 'Grupos / Empresas',
+                  color: AppColors.primary,
+                  onTap: () => Get.toNamed(AppRoutes.grupos),
+                ),
+                _ActionCard(
+                  icon: Icons.landscape_outlined,
+                  title: 'Propriedades',
+                  color: Colors.teal.shade700,
+                  onTap: () => Get.toNamed(AppRoutes.propriedades),
+                ),
+                _ActionCard(
+                  icon: Icons.people_outline,
+                  title: 'Pessoas',
+                  color: Colors.blue.shade700,
+                  onTap: () => Get.snackbar(
+                    'Em desenvolvimento',
+                    'Funcionalidade em breve',
+                    backgroundColor: AppColors.info.withValues(alpha: 0.1),
+                    colorText: AppColors.info,
+                  ),
+                ),
+                _ActionCard(
+                  icon: Icons.pets_outlined,
+                  title: 'Animais',
+                  color: Colors.brown.shade600,
+                  onTap: () => Get.toNamed(AppRoutes.animais),
+                ),
+                _ActionCard(
+                  icon: Icons.category_outlined,
+                  title: 'Raças',
+                  color: Colors.amber.shade700,
+                  onTap: () => Get.toNamed(AppRoutes.racas),
+                  customIcon: const CowHeadIcon(size: 28),
+                ),
+                _ActionCard(
+                  icon: Icons.assignment_outlined,
+                  title: 'Manejos',
+                  color: Colors.orange.shade700,
+                  onTap: () => Get.toNamed(AppRoutes.manejos),
+                ),
+                _ActionCard(
+                  icon: Icons.monitor_weight_outlined,
+                  title: 'Pesagens',
+                  color: Colors.blue.shade700,
+                  onTap: () => Get.toNamed(AppRoutes.pesagens),
+                ),
+                _ActionCard(
+                  icon: Icons.medical_services_outlined,
+                  title: 'Vacinações',
+                  color: Colors.red.shade700,
+                  onTap: () => Get.toNamed(AppRoutes.vacinacoes),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// Card de resumo do dashboard
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+    this.trend,
+  });
+
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final String? trend;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.extension<AppColorScheme>()!;
+    final textTheme = theme.extension<AppTextTheme>()!;
+
+    return AppCard(
+      padding: AppSpacing.sm,
+      onTap: () {},
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Icon(icon, size: 22, color: color),
+              ),
+              const Spacer(),
+              if (trend != null)
+                AppStatusBadge(
+                  label: trend!,
+                  type: color == Colors.green.shade700
+                      ? AppStatusType.active
+                      : color == Colors.red.shade700
+                          ? AppStatusType.error
+                          : AppStatusType.info,
+                  size: AppStatusBadgeSize.small,
+                ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              controller.logout();
-            },
-            child: const Text(
-              'Sair',
-              style: TextStyle(color: AppColors.error),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            value,
+            style: textTheme.displaySmall.copyWith(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+              height: 1.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            title,
+            style: textTheme.labelMedium.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Card de ação rápida
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.onTap,
+    this.customIcon,
+  });
+
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+  final Widget? customIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.extension<AppColorScheme>()!;
+    final textTheme = theme.extension<AppTextTheme>()!;
+
+    return AppCard(
+      padding: AppSpacing.xs,
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: customIcon ??
+                Icon(
+                  icon,
+                  size: 22,
+                  color: color,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Flexible(
+            child: Text(
+              title,
+              textAlign: TextAlign.center,
+              style: textTheme.labelMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

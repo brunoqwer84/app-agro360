@@ -5,6 +5,9 @@ import '../controllers/manejo_controller.dart';
 import '../controllers/animal_controller.dart';
 import '../controllers/propriedade_controller.dart';
 import '../models/manejo.dart';
+import '../models/animal.dart';
+import '../models/propriedade.dart';
+import '../models/raca.dart';
 import '../utils/app_colors.dart';
 
 /// Formulário de Manejo (criar/editar)
@@ -26,7 +29,7 @@ class ManejoFormView extends GetView<ManejoController> {
     final animalController = Get.find<AnimalController>();
     final propriedadeController = Get.find<PropriedadeController>();
 
-    Future<void> _selectDate() async {
+    Future<void> selectDate() async {
       final picked = await showDatePicker(
         context: context,
         locale: const Locale('pt', 'BR'),
@@ -58,7 +61,7 @@ class ManejoFormView extends GetView<ManejoController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Obx(() => DropdownButtonFormField<int>(
-                    value: idAnimal.value > 0 ? idAnimal.value : null,
+                    initialValue: idAnimal.value > 0 ? idAnimal.value : null,
                     decoration: _inputDecoration(
                       label: 'Animal*',
                       hint: 'Selecione',
@@ -83,7 +86,7 @@ class ManejoFormView extends GetView<ManejoController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<int>(
-                    value: idPropriedade.value > 0 ? idPropriedade.value : null,
+                    initialValue: idPropriedade.value > 0 ? idPropriedade.value : null,
                     decoration: _inputDecoration(
                       label: 'Propriedade*',
                       hint: 'Selecione',
@@ -108,7 +111,7 @@ class ManejoFormView extends GetView<ManejoController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<String>(
-                    value: tipo.value,
+                    initialValue: tipo.value,
                     decoration: _inputDecoration(
                       label: 'Tipo*',
                       hint: 'Selecione',
@@ -125,7 +128,7 @@ class ManejoFormView extends GetView<ManejoController> {
               const SizedBox(height: 16),
 
               Obx(() => InkWell(
-                    onTap: _selectDate,
+                    onTap: selectDate,
                     child: InputDecorator(
                       decoration: _inputDecoration(
                         label: 'Data*',
@@ -153,34 +156,48 @@ class ManejoFormView extends GetView<ManejoController> {
               ),
               const SizedBox(height: 24),
 
-              Obx(() => Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.value
-                              ? null
-                              : () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final manejo = Manejo(
-                                      idManejo: isEdit ? args.idManejo : 0,
-                                      idAnimal: idAnimal.value,
-                                      idPropriedade: idPropriedade.value,
-                                      tipo: tipo.value,
-                                      data: data.value,
-                                      observacao: observacao.value.isEmpty
-                                          ? null
-                                          : observacao.value,
-                                    );
-                                    if (isEdit) {
-                                      await controller.updateManejo(
-                                          args.idManejo, manejo);
-                                    } else {
-                                      await controller.create(manejo);
+Obx(() => Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : () async {
+                                    if (formKey.currentState!.validate()) {
+                                      final animalSelecionado = animalController.animais
+                                          .firstWhere((a) => a.idAnimal == idAnimal.value);
+                                      final propriedadeSelecionada = propriedadeController.properties
+                                          .firstWhere((p) => p.idPropriedade == idPropriedade.value);
+                                      final manejo = Manejo(
+                                        idManejo: isEdit ? args.idManejo : 0,
+                                        animal: Animal(
+                                          idAnimal: animalSelecionado.idAnimal,
+                                          identificacao: animalSelecionado.identificacao,
+                                          sexo: animalSelecionado.sexo,
+                                          propriedade: Propriedade(idPropriedade: 0, nome: '', ativo: true),
+                                          raca: Raca(idRaca: 0, descricao: ''),
+                                        ),
+                                        propriedade: Propriedade(
+                                          idPropriedade: propriedadeSelecionada.idPropriedade,
+                                          nome: propriedadeSelecionada.nome,
+                                          ativo: propriedadeSelecionada.ativo,
+                                        ),
+                                        tipo: tipo.value,
+                                        data: data.value,
+                                        observacao: observacao.value.isEmpty
+                                            ? null
+                                            : observacao.value,
+                                      );
+                                      if (isEdit) {
+                                        await controller.updateManejo(
+                                            args.idManejo, manejo);
+                                      } else {
+                                        await controller.create(manejo);
+                                      }
                                     }
-                                  }
-                                },
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -213,7 +230,7 @@ class ManejoFormView extends GetView<ManejoController> {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: Text(
+                        child: const Text(
                           'Cancelar',
                           style: TextStyle(color: AppColors.primary),
                         ),

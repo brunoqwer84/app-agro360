@@ -44,12 +44,12 @@ class RacaListView extends GetView<RacaController> {
                   );
                 }
                 if (controller.racas.isEmpty) {
-                  return Center(
+                  return const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.pets, size: 64, color: AppColors.textHint),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         Text(
                           'Nenhuma raça cadastrada',
                           style: TextStyle(color: AppColors.textSecondary),
@@ -66,9 +66,9 @@ class RacaListView extends GetView<RacaController> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
-leading: CircleAvatar(
+leading: const CircleAvatar(
                   backgroundColor: AppColors.surface,
-                  child: const CowHeadIcon(size: 32),
+                  child: CowHeadIcon(size: 32),
                 ),
                         title: Text(
                           r.descricao,
@@ -76,7 +76,7 @@ leading: CircleAvatar(
                         ),
                         subtitle: Text(
                           'ID: ${r.idRaca}',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: const TextStyle(color: AppColors.textSecondary),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,

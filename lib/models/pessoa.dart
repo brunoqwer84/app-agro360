@@ -1,3 +1,5 @@
+import 'grupo.dart';
+
 /// Model de Pessoa
 /// Corresponde à entidade Pessoa do backend
 class Pessoa {
@@ -7,6 +9,7 @@ class Pessoa {
   final String? fone;
   final String? email;
   final bool ativo;
+  final Grupo grupo;
   bool synced;
   DateTime? updatedAt;
 
@@ -17,6 +20,7 @@ class Pessoa {
     this.fone,
     this.email,
     required this.ativo,
+    required this.grupo,
     this.synced = false,
     this.updatedAt,
   });
@@ -30,6 +34,7 @@ class Pessoa {
       fone: json['fone'] as String?,
       email: json['email'] as String?,
       ativo: json['ativo'] as bool,
+      grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : Grupo(idGrupo: 0, nome: '', ativo: true),
       synced: true,
       updatedAt: DateTime.now(),
     );
@@ -44,6 +49,7 @@ class Pessoa {
       fone: map['fone'] as String?,
       email: map['email'] as String?,
       ativo: (map['ativo'] as int) == 1,
+      grupo: Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true),
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
@@ -54,7 +60,6 @@ class Pessoa {
   /// Converte para JSON
   Map<String, dynamic> toJson() {
     return {
-      'idPessoa': idPessoa,
       'nome': nome,
       'cpfCnpj': cpfCnpj,
       'fone': fone,
@@ -72,6 +77,7 @@ class Pessoa {
       'fone': fone,
       'email': email,
       'ativo': ativo ? 1 : 0,
+      'id_grupo': grupo.idGrupo,
       'synced': synced ? 1 : 0,
       'updated_at': updatedAt?.toIso8601String(),
     };

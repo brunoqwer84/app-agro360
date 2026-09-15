@@ -1,3 +1,7 @@
+import 'grupo.dart';
+import 'propriedade.dart';
+import 'raca.dart';
+
 /// Model de Animal
 /// Corresponde à entidade Animal do backend
 class Animal {
@@ -9,10 +13,15 @@ class Animal {
   final String? status;
   final DateTime? criadoEm;
   final DateTime? atualizadoEm;
-  final int idPropriedade;
-  final int idRaca;
+  final Propriedade propriedade;
+  final Raca raca;
+  final Grupo? grupo;
   bool synced;
   DateTime? updatedAt;
+
+  // Helper fields for backward compatibility with views
+  final int idPropriedade;
+  final int idRaca;
 
   Animal({
     required this.idAnimal,
@@ -23,11 +32,13 @@ class Animal {
     this.status,
     this.criadoEm,
     this.atualizadoEm,
-    required this.idPropriedade,
-    required this.idRaca,
+    required this.propriedade,
+    required this.raca,
+    this.grupo,
     this.synced = false,
     this.updatedAt,
-  });
+  }) : idPropriedade = propriedade.idPropriedade,
+       idRaca = raca.idRaca;
 
   /// Cria instância a partir de JSON da API
   factory Animal.fromJson(Map<String, dynamic> json) {
@@ -46,8 +57,9 @@ class Animal {
       atualizadoEm: json['atualizadoEm'] != null
           ? DateTime.parse(json['atualizadoEm'] as String)
           : null,
-      idPropriedade: json['idPropriedade'] as int,
-      idRaca: json['idRaca'] as int,
+      propriedade: json['propriedade'] != null ? Propriedade.fromJson(json['propriedade']) : Propriedade(idPropriedade: 0, nome: '', ativo: true, grupo: null),
+      raca: json['raca'] != null ? Raca.fromJson(json['raca']) : Raca(idRaca: 0, descricao: '', grupo: null),
+      grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : null,
       synced: true,
       updatedAt: DateTime.now(),
     );
@@ -70,8 +82,9 @@ class Animal {
       atualizadoEm: map['atualizado_em'] != null
           ? DateTime.parse(map['atualizado_em'] as String)
           : null,
-      idPropriedade: map['id_propriedade'] as int,
-      idRaca: map['id_raca'] as int,
+      propriedade: Propriedade(idPropriedade: map['id_propriedade'] as int, nome: '', ativo: true, grupo: null),
+      raca: Raca(idRaca: map['id_raca'] as int, descricao: '', grupo: null),
+      grupo: map['id_grupo'] != null ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true) : null,
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
@@ -82,16 +95,13 @@ class Animal {
   /// Converte para JSON
   Map<String, dynamic> toJson() {
     return {
-      'idAnimal': idAnimal,
       'identificacao': identificacao,
       'sexo': sexo,
       'dataNascimento': dataNascimento?.toIso8601String(),
       'tipoProducao': tipoProducao,
       'status': status,
-      'criadoEm': criadoEm?.toIso8601String(),
-      'atualizadoEm': atualizadoEm?.toIso8601String(),
-      'idPropriedade': idPropriedade,
-      'idRaca': idRaca,
+      'idPropriedade': propriedade.idPropriedade,
+      'idRaca': raca.idRaca,
     };
   }
 
@@ -106,8 +116,9 @@ class Animal {
       'status': status,
       'criado_em': criadoEm?.toIso8601String(),
       'atualizado_em': atualizadoEm?.toIso8601String(),
-      'id_propriedade': idPropriedade,
-      'id_raca': idRaca,
+      'id_propriedade': propriedade.idPropriedade,
+      'id_raca': raca.idRaca,
+      'id_grupo': grupo?.idGrupo,
       'synced': synced ? 1 : 0,
       'updated_at': updatedAt?.toIso8601String(),
     };

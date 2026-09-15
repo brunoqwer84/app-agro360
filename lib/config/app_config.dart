@@ -5,7 +5,7 @@ class AppConfig {
   // URL base da API - Detectada automaticamente por plataforma
   static String get baseUrl {
     // Prioridade: variável de ambiente > detecção automática > fallback
-    final envUrl = const String.fromEnvironment('API_BASE_URL');
+    const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
 
     if (Platform.isAndroid) {
@@ -29,6 +29,10 @@ class AppConfig {
   static const String authFirstAccess = '/auth/first-access';
   static const String authValidate = '/auth/validate';
 
+  // Endpoints de grupo
+  static const String grupos = '/grupo';
+  static const String gruposAtivos = '/grupo/ativo';
+
   // Endpoints de usuário
   static const String usuarios = '/usuarios';
   static const String usuariosAtivos = '/usuarios/ativos';
@@ -36,6 +40,13 @@ class AppConfig {
   // Endpoints de propriedades
   static const String propriedades = '/propriedade';
   static const String propriedadesAtivas = '/propriedade/ativo';
+  static const String propriedadesMinhas = '/propriedade/minhas';
+
+  // Endpoints de pessoas
+  static const String pessoas = '/pessoa';
+  static const String pessoasAtivas = '/pessoa/ativo';
+  static const String pessoasBuscar = '/pessoa/buscar';
+  static const String pessoasPorCpfCnpj = '/pessoa/cpf-cnpj';
 
   // Endpoints de raças
   static const String racas = '/raca';

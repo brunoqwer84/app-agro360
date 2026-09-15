@@ -1,16 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import '../models/grupo.dart';
 import '../models/login_request.dart';
 import '../models/auth_response.dart';
 import '../models/first_access_request.dart';
 import '../models/propriedade.dart';
 import '../models/raca.dart';
-import '../models/propriedade.dart';
 import '../models/animal.dart';
 import '../models/manejo.dart';
 import '../models/pesagem.dart';
 import '../models/vacinacao.dart';
+import '../models/pessoa.dart';
 import '../models/usuario.dart';
 
 /// Service para comunicação com a API REST
@@ -18,6 +19,7 @@ class ApiService {
   late final Dio _dio;
   String? _token;
   String? _tokenType;
+  Function? _onTokenExpired;
 
   ApiService() {
     _dio = Dio(
@@ -28,6 +30,17 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
         },
+      ),
+    );
+
+    // Interceptor de log para debug
+    _dio.interceptors.add(
+      LogInterceptor(
+        requestBody: true,
+        responseBody: true,
+        requestHeader: true,
+        responseHeader: false,
+        error: true,
       ),
     );
 
@@ -44,13 +57,26 @@ class ApiService {
         onError: (error, handler) async {
           // Tratamento de erros
           if (error.response?.statusCode == 401) {
-            // Token inválido ou expirado - limpar token
-            await clearToken();
+            // Não limpar token no endpoint de login - 401 lá = credenciais inválidas, não token expirado
+            final requestPath = error.requestOptions.path;
+            if (!requestPath.contains('/auth/login')) {
+              // Token inválido ou expirado - limpar token
+              await clearToken();
+              // Notificar listener se houver
+              if (_onTokenExpired != null) {
+                _onTokenExpired!();
+              }
+            }
           }
           return handler.next(error);
         },
       ),
     );
+  }
+
+  /// Define callback para quando o token expira
+  void setOnTokenExpired(Function callback) {
+    _onTokenExpired = callback;
   }
 
   /// Inicializa o serviço carregando o token salvo
@@ -64,7 +90,7 @@ class ApiService {
   Future<void> setToken(String token, String type) async {
     _token = token;
     _tokenType = type;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(AppConfig.tokenKey, token);
     await prefs.setString(AppConfig.tokenTypeKey, type);
@@ -74,7 +100,7 @@ class ApiService {
   Future<void> clearToken() async {
     _token = null;
     _tokenType = null;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConfig.tokenKey);
     await prefs.remove(AppConfig.tokenTypeKey);
@@ -91,6 +117,8 @@ class ApiService {
   /// POST /api/auth/login
   Future<AuthResponse> login(LoginRequest request) async {
     try {
+      await clearToken();
+
       final response = await _dio.post(
         AppConfig.authLogin,
         data: request.toJson(),
@@ -98,7 +126,7 @@ class ApiService {
 
       final authResponse = AuthResponse.fromJson(response.data);
       await setToken(authResponse.token, authResponse.type);
-      
+
       return authResponse;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -116,7 +144,7 @@ class ApiService {
     }
   }
 
-  /// Realiza o primeiro acesso (cadastro de Pessoa + Usuário)
+  /// Realiza o primeiro acesso (cadastro de Grupo + Pessoa + Usuário)
   /// POST /api/auth/first-access
   Future<FirstAccessResponse> firstAccess(FirstAccessRequest request) async {
     try {
@@ -139,9 +167,86 @@ class ApiService {
     }
   }
 
+  // ========== GRUPOS ==========
+
+  /// Lista todos os grupos
+  /// GET /api/grupo
+  Future<List<Grupo>> getAllGrupos() async {
+    try {
+      final response = await _dio.get(AppConfig.grupos);
+      return (response.data as List)
+          .map((json) => Grupo.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Lista grupos ativos
+  /// GET /api/grupo/ativo
+  Future<List<Grupo>> getGruposAtivos() async {
+    try {
+      final response = await _dio.get(AppConfig.gruposAtivos);
+      return (response.data as List)
+          .map((json) => Grupo.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca grupo por ID
+  /// GET /api/grupo/{id}
+  Future<Grupo> getGrupoById(int id) async {
+    try {
+      final response = await _dio.get('${AppConfig.grupos}/$id');
+      return Grupo.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Cria novo grupo
+  /// POST /api/grupo
+  Future<Grupo> createGrupo(Grupo grupo) async {
+    try {
+      final response = await _dio.post(
+        AppConfig.grupos,
+        data: grupo.toJson(),
+      );
+      return Grupo.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Atualiza grupo
+  /// PUT /api/grupo/{id}
+  Future<Grupo> updateGrupo(int id, Grupo grupo) async {
+    try {
+      final response = await _dio.put(
+        '${AppConfig.grupos}/$id',
+        data: grupo.toJson(),
+      );
+      return Grupo.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Deleta grupo
+  /// DELETE /api/grupo/{id}
+  Future<void> deleteGrupo(int id) async {
+    try {
+      await _dio.delete('${AppConfig.grupos}/$id');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // ========== PROPRIEDADES ==========
 
-  /// Lista todas as propriedades
+  /// Lista todas as propriedades do grupo
   /// GET /api/propriedade
   Future<List<Propriedade>> getAllPropriedades() async {
     try {
@@ -154,7 +259,7 @@ class ApiService {
     }
   }
 
-  /// Lista apenas propriedades ativas
+  /// Lista apenas propriedades ativas do grupo
   /// GET /api/propriedade/ativo
   Future<List<Propriedade>> getPropriedadesAtivas() async {
     try {
@@ -167,11 +272,11 @@ class ApiService {
     }
   }
 
-  /// Lista propriedades por pessoa
-  /// GET /api/propriedade/pessoa/{idPessoa}
-  Future<List<Propriedade>> getPropriedadesByPessoa(int idPessoa) async {
+  /// Lista minhas propriedades (do grupo do usuário autenticado)
+  /// GET /api/propriedade/minhas
+  Future<List<Propriedade>> getMinhasPropriedades() async {
     try {
-      final response = await _dio.get('${AppConfig.propriedades}/pessoa/$idPessoa');
+      final response = await _dio.get(AppConfig.propriedadesMinhas);
       return (response.data as List)
           .map((json) => Propriedade.fromJson(json))
           .toList();
@@ -229,9 +334,113 @@ class ApiService {
     }
   }
 
+  // ========== PESSOAS ==========
+
+  /// Lista todas as pessoas do grupo
+  /// GET /api/pessoa
+  Future<List<Pessoa>> getAllPessoas() async {
+    try {
+      final response = await _dio.get(AppConfig.pessoas);
+      return (response.data as List)
+          .map((json) => Pessoa.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Lista pessoas ativas do grupo
+  /// GET /api/pessoa/ativo
+  Future<List<Pessoa>> getPessoasAtivas() async {
+    try {
+      final response = await _dio.get(AppConfig.pessoasAtivas);
+      return (response.data as List)
+          .map((json) => Pessoa.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca pessoas por nome
+  /// GET /api/pessoa/buscar?nome=...
+  Future<List<Pessoa>> searchPessoas(String nome) async {
+    try {
+      final response = await _dio.get(
+        AppConfig.pessoasBuscar,
+        queryParameters: {'nome': nome},
+      );
+      return (response.data as List)
+          .map((json) => Pessoa.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca pessoa por CPF/CNPJ
+  /// GET /api/pessoa/cpf-cnpj/{cpfCnpj}
+  Future<Pessoa> getPessoaByCpfCnpj(String cpfCnpj) async {
+    try {
+      final response = await _dio.get('${AppConfig.pessoasPorCpfCnpj}/$cpfCnpj');
+      return Pessoa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca pessoa por ID
+  /// GET /api/pessoa/{id}
+  Future<Pessoa> getPessoaById(int id) async {
+    try {
+      final response = await _dio.get('${AppConfig.pessoas}/$id');
+      return Pessoa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Cria nova pessoa
+  /// POST /api/pessoa
+  Future<Pessoa> createPessoa(Pessoa pessoa) async {
+    try {
+      final response = await _dio.post(
+        AppConfig.pessoas,
+        data: pessoa.toJson(),
+      );
+      return Pessoa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Atualiza pessoa
+  /// PUT /api/pessoa/{id}
+  Future<Pessoa> updatePessoa(int id, Pessoa pessoa) async {
+    try {
+      final response = await _dio.put(
+        '${AppConfig.pessoas}/$id',
+        data: pessoa.toJson(),
+      );
+      return Pessoa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Deleta pessoa
+  /// DELETE /api/pessoa/{id}
+  Future<void> deletePessoa(int id) async {
+    try {
+      await _dio.delete('${AppConfig.pessoas}/$id');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   // ========== RAÇAS ==========
 
-  /// Lista todas as raças
+  /// Lista todas as raças do grupo
   /// GET /api/raca
   Future<List<Raca>> getAllRacas() async {
     try {
@@ -311,7 +520,7 @@ class ApiService {
 
   // ========== ANIMAIS ==========
 
-  /// Lista todos os animais
+  /// Lista todos os animais do grupo
   Future<List<Animal>> getAllAnimais() async {
     try {
       final response = await _dio.get(AppConfig.animais);
@@ -376,7 +585,7 @@ class ApiService {
 
   // ========== MANEJOS ==========
 
-  /// Lista todos os manejos
+  /// Lista todos os manejos do grupo
   Future<List<Manejo>> getAllManejos() async {
     try {
       final response = await _dio.get(AppConfig.manejos);
@@ -441,7 +650,7 @@ class ApiService {
 
   // ========== PESAGENS ==========
 
-  /// Lista todas as pesagens
+  /// Lista todas as pesagens do grupo
   Future<List<Pesagem>> getAllPesagens() async {
     try {
       final response = await _dio.get(AppConfig.pesagens);
@@ -490,7 +699,7 @@ class ApiService {
 
   // ========== VACINAÇÕES ==========
 
-  /// Lista todas as vacinações
+  /// Lista todas as vacinações do grupo
   Future<List<Vacinacao>> getAllVacinacoes() async {
     try {
       final response = await _dio.get(AppConfig.vacinacoes);
@@ -584,17 +793,41 @@ class ApiService {
       final statusCode = error.response!.statusCode;
       final data = error.response!.data;
 
+      // Tenta extrair mensagem de erro estruturada
+      String extractMessage(dynamic data) {
+        if (data is String) return data;
+        if (data is Map) {
+          // Spring Boot validation errors
+          if (data.containsKey('message')) return data['message'].toString();
+          if (data.containsKey('error')) return data['error'].toString();
+          if (data.containsKey('errors')) {
+            final errors = data['errors'];
+            if (errors is List && errors.isNotEmpty) return errors.first.toString();
+            if (errors is Map) {
+              final firstKey = errors.keys.first;
+              final val = errors[firstKey];
+              if (val is List && val.isNotEmpty) return val.first.toString();
+              return val.toString();
+            }
+          }
+          // Generic map - return first value
+          if (data.values.isNotEmpty) return data.values.first.toString();
+        }
+        if (data is List && data.isNotEmpty) return data.first.toString();
+        return 'Erro desconhecido';
+      }
+
       switch (statusCode) {
         case 400:
-          return data is String ? data : 'Dados inválidos';
+          return extractMessage(data);
         case 401:
-          return 'Credenciais inválidas ou token expirado';
+          return extractMessage(data).isEmpty ? 'Credenciais inválidas ou token expirado' : extractMessage(data);
         case 404:
-          return 'Recurso não encontrado';
+          return extractMessage(data).isEmpty ? 'Recurso não encontrado' : extractMessage(data);
         case 500:
-          return 'Erro interno do servidor';
+          return extractMessage(data).isEmpty ? 'Erro interno do servidor' : extractMessage(data);
         default:
-          return data is String ? data : 'Erro desconhecido';
+          return extractMessage(data).isEmpty ? 'Erro desconhecido' : extractMessage(data);
       }
     } else if (error.type == DioExceptionType.connectionTimeout) {
       return 'Tempo de conexão esgotado';

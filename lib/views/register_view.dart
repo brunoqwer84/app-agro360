@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/grupo_controller.dart';
 import '../models/first_access_request.dart';
+import '../models/grupo.dart';
 import '../utils/formatters.dart';
 import '../utils/app_colors.dart';
 
@@ -11,6 +13,7 @@ class RegisterView extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
+    final grupoController = Get.find<GrupoController>();
     final formKey = GlobalKey<FormState>();
 
     final nomeController = TextEditingController();
@@ -20,6 +23,7 @@ class RegisterView extends GetView<AuthController> {
     final usuarioController = TextEditingController();
     final senhaController = TextEditingController();
     final confirmaSenhaController = TextEditingController();
+    final grupoSelecionado = Rxn<Grupo>();
 
     final obscurePassword = true.obs;
     final obscureConfirmPassword = true.obs;
@@ -221,6 +225,27 @@ class RegisterView extends GetView<AuthController> {
                                   },
                                 ),
 
+                                const SizedBox(height: 12),
+
+                                // Grupo/Empresa (opcional - para primeiro acesso)
+                                Obx(() => grupoController.groups.isNotEmpty
+                                    ? DropdownButtonFormField<Grupo>(
+                                        initialValue: grupoSelecionado.value,
+                                        decoration: _inputDecoration(
+                                          label: 'Grupo/Empresa (opcional)',
+                                          hint: 'Selecione ou deixe em branco para criar novo',
+                                          icon: Icons.business,
+                                        ),
+                                        items: grupoController.groups
+                                            .where((g) => g.ativo)
+                                            .map((g) => DropdownMenuItem(
+                                                  value: g,
+                                                  child: Text(g.nome),
+                                                ))
+                                            .toList(),
+                                        onChanged: (v) => grupoSelecionado.value = v,
+                                      )
+                                    : const SizedBox.shrink()),
                                 const SizedBox(height: 24),
 
                                 // Seção: Dados de Acesso
@@ -378,21 +403,25 @@ class RegisterView extends GetView<AuthController> {
                                                                   r'[^0-9]'),
                                                               '');
 
-                                                  final request =
-                                                      FirstAccessRequest(
-                                                    nome: nomeController.text
+final request =
+                                                  FirstAccessRequest(
+                                                nome: nomeController.text
+                                                    .trim(),
+                                                cpfCnpj: cpfCnpjLimpo,
+                                                fone: foneLimpo.isEmpty
+                                                    ? null
+                                                    : foneLimpo,
+                                                email: emailController.text
+                                                    .trim(),
+                                                nomeUsuario:
+                                                    usuarioController.text
                                                         .trim(),
-                                                    cpfCnpj: cpfCnpjLimpo,
-                                                    fone: foneLimpo.isEmpty
-                                                        ? null
-                                                        : foneLimpo,
-                                                    email: emailController.text
-                                                        .trim(),
-                                                    nomeUsuario:
-                                                        usuarioController.text
-                                                            .trim(),
-                                                    senha: senhaController.text,
-                                                  );
+                                                senha: senhaController.text,
+                                                idGrupo: grupoSelecionado.value?.idGrupo,
+                                                nomeGrupo: grupoSelecionado.value?.nome,
+                                                cnpjGrupo: grupoSelecionado.value?.cnpj,
+                                                nomePropriedade: 'Minha Propriedade',
+                                              );
 
                                                   final ok =
                                                       await controller.register(
@@ -450,7 +479,7 @@ class RegisterView extends GetView<AuthController> {
                                 // Já tem conta? Voltar para login
                                 TextButton(
                                   onPressed: () => Get.back(),
-                                  child: Text(
+                                  child: const Text(
                                     'Já tem conta? Fazer login',
                                     style: TextStyle(
                                       color: AppColors.primary,

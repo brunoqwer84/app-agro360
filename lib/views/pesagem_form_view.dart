@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../controllers/pesagem_controller.dart';
 import '../controllers/manejo_controller.dart';
 import '../models/pesagem.dart';
+import '../models/manejo.dart';
 import '../utils/app_colors.dart';
 
 /// Formulário de Pesagem (criar/editar)
@@ -42,7 +43,7 @@ class PesagemFormView extends GetView<PesagemController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Obx(() => DropdownButtonFormField<int>(
-                    value: idManejo.value > 0 ? idManejo.value : null,
+                    initialValue: idManejo.value > 0 ? idManejo.value : null,
                     decoration: _inputDecoration(
                       label: 'Manejo*',
                       hint: 'Selecione',
@@ -91,29 +92,35 @@ class PesagemFormView extends GetView<PesagemController> {
               ),
               const SizedBox(height: 16),
 
-              Obx(() => Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.value
-                              ? null
-                              : () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final pesagem = Pesagem(
-                                      idPesagem: isEdit ? args.idPesagem : 0,
-                                      idManejo: idManejo.value,
-                                      pesoKg: pesoKg.value,
-                                    );
-                                    if (isEdit) {
-                                      await controller.updatePesagem(
-                                          args.idPesagem, pesagem);
-                                    } else {
-                                      await controller.create(pesagem);
+Obx(() => Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : () async {
+                                    if (formKey.currentState!.validate()) {
+                                      final manejoSelecionado = manejoController.manejos
+                                          .firstWhere((m) => m.idManejo == idManejo.value);
+                                      final pesagem = Pesagem(
+                                        idPesagem: isEdit ? args.idPesagem : 0,
+                                        manejo: Manejo(
+                                          idManejo: manejoSelecionado.idManejo,
+                                          tipo: manejoSelecionado.tipo,
+                                          data: manejoSelecionado.data,
+                                        ),
+                                        pesoKg: pesoKg.value,
+                                      );
+                                      if (isEdit) {
+                                        await controller.updatePesagem(
+                                            args.idPesagem, pesagem);
+                                      } else {
+                                        await controller.create(pesagem);
+                                      }
                                     }
-                                  }
-                                },
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -146,7 +153,7 @@ class PesagemFormView extends GetView<PesagemController> {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: Text(
+                        child: const Text(
                           'Cancelar',
                           style: TextStyle(color: AppColors.primary),
                         ),

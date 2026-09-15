@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import '../views/grupo_form_view.dart';
+import '../views/grupo_list_view.dart';
 import '../views/splash_view.dart';
 import '../views/login_view.dart';
 import '../views/register_view.dart';
@@ -96,6 +98,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.vacinacoesForm,
       page: () => const VacinacaoFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.grupos,
+      page: () => const GrupoListView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.gruposForm,
+      page: () => const GrupoFormView(),
       binding: InitialBinding(),
     ),
     GetPage(

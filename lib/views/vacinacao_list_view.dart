@@ -33,14 +33,14 @@ class VacinacaoListView extends GetView<VacinacaoController> {
             );
           }
           if (controller.vacinacoes.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.vaccines,
                       size: 64, color: AppColors.textHint),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'Nenhuma vacinação cadastrada',
                     style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                   ),
@@ -75,7 +75,7 @@ class VacinacaoListView extends GetView<VacinacaoController> {
                   ),
                   subtitle: Text(
                     'Próxima dose: ${DateFormat('dd/MM/yyyy').format(v.proximaDose)}${manejo != null ? '\nManejo: ${manejo.tipo}' : ''}',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

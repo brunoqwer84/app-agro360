@@ -32,14 +32,14 @@ class ManejoListView extends GetView<ManejoController> {
             );
           }
           if (controller.manejos.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.assignment,
                       size: 64, color: AppColors.textHint),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'Nenhum manejo cadastrado',
                     style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                   ),
@@ -68,7 +68,7 @@ class ManejoListView extends GetView<ManejoController> {
                   ),
                   subtitle: Text(
                     '${animal?.identificacao ?? 'Animal ${m.idAnimal}'} • ${m.data.day.toString().padLeft(2, '0')}/${m.data.month.toString().padLeft(2, '0')}/${m.data.year}',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

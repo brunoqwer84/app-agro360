@@ -1,7 +1,10 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'agro_icons.dart';
+import 'cow_head_icon.dart';
 
-/// Logo Agro360 para Splash - trator central com animação de arcos 360°
+/// Logo Agro360 para Splash — animado, com arcos de sincronização girando
+/// e o trator central. Mantido para uso opcional em outras telas de loading.
 class Agro360LogoSplash extends StatefulWidget {
   final double size;
 
@@ -41,7 +44,6 @@ class _Agro360LogoSplashState extends State<Agro360LogoSplash>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Arcos girando indicando sincronização 360°
           AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
@@ -66,10 +68,8 @@ class _Agro360LogoSplashState extends State<Agro360LogoSplash>
               ),
             ),
           ),
-
-          // Trator central
           Container(
-            padding: EdgeInsets.all(widget.size * 0.2),
+            padding: EdgeInsets.all(widget.size * 0.18),
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
@@ -81,9 +81,8 @@ class _Agro360LogoSplashState extends State<Agro360LogoSplash>
                 ),
               ],
             ),
-            child: Icon(
-              Icons.agriculture,
-              size: widget.size * 0.55,
+            child: TractorIcon(
+              size: widget.size * 0.6,
               color: const Color(0xFF2E7D32),
             ),
           ),
@@ -93,8 +92,9 @@ class _Agro360LogoSplashState extends State<Agro360LogoSplash>
   }
 }
 
-/// Logo Agro360 para Login - estático, 360° com as 3 áreas do agro
-/// (Trator, Vaca, Lavoura) conectadas por arcos de sincronização
+/// Logo Agro360 — versão estática usada na Splash e na tela de Login.
+/// Conecta visualmente as 3 áreas do agro (Trator, Vaca, Lavoura)
+/// em um ciclo 360°, com a marca "360" no centro.
 class Agro360LogoLogin extends StatelessWidget {
   final double size;
 
@@ -116,7 +116,7 @@ class Agro360LogoLogin extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Círculo de fundo com gradiente
+          // Círculo de fundo com gradiente verde
           Container(
             width: size,
             height: size,
@@ -126,14 +126,21 @@ class Agro360LogoLogin extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.2),
-                  Colors.white.withValues(alpha: 0.05),
+                  Colors.white.withValues(alpha: 0.28),
+                  Colors.white.withValues(alpha: 0.08),
                 ],
               ),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.4),
+                color: Colors.white.withValues(alpha: 0.5),
                 width: 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
           ),
 
@@ -144,38 +151,38 @@ class Agro360LogoLogin extends StatelessWidget {
             child: CustomPaint(
               painter: _SyncArcsPainter(
                 colors: [
-                  Colors.amber.shade600.withValues(alpha: 0.9),
-                  Colors.brown.shade400.withValues(alpha: 0.9),
-                  Colors.lightGreen.shade600.withValues(alpha: 0.9),
+                  const Color(0xFFFFB300).withValues(alpha: 0.95), // trator (âmbar)
+                  const Color(0xFF6D4C41).withValues(alpha: 0.95), // vaca (marrom)
+                  const Color(0xFF66BB6A).withValues(alpha: 0.95), // lavoura (verde)
                 ],
-                radiusFactor: 0.5,
-                strokeWidth: size * 0.022,
+                radiusFactor: 0.48,
+                strokeWidth: size * 0.024,
               ),
             ),
           ),
 
-          // Três áreas do agro posicionadas em círculo (120° entre si)
+          // Três ícones do agro posicionados em círculo (120° entre si)
           _positionedIcon(
             angleDegrees: _angleTrator,
-            child: _centerIcon(
-              icon: Icons.agriculture,
-              color: Colors.amber.shade700,
+            child: _iconBadge(
+              child: TractorIcon(size: size * 0.20, color: const Color(0xFFFFB300)),
             ),
           ),
           _positionedIcon(
             angleDegrees: _angleVaca,
-            child: _centerIcon(
-              emoji: '🐮',
-              color: Colors.brown.shade600,
+            child: _iconBadge(
+              child: CowHeadIcon(size: size * 0.22, color: const Color(0xFF6D4C41)),
             ),
           ),
           _positionedIcon(
             angleDegrees: _angleLavoura,
-            child: _centerIcon(
-              icon: Icons.eco,
-              color: Colors.lightGreen.shade700,
+            child: _iconBadge(
+              child: WheatIcon(size: size * 0.20, color: const Color(0xFF66BB6A)),
             ),
           ),
+
+          // Marca "360" central — reforça o nome do app
+          _centerMark(size: size),
         ],
       ),
     );
@@ -185,11 +192,11 @@ class Agro360LogoLogin extends StatelessWidget {
     required double angleDegrees,
     required Widget child,
   }) {
-    final radius = size * 0.30;
+    final radius = size * 0.32;
     final angleRad = angleDegrees * pi / 180;
     final dx = radius * cos(angleRad);
     final dy = radius * sin(angleRad);
-    final iconSize = size * 0.22;
+    final iconSize = size * 0.26;
 
     return Positioned(
       left: size / 2 + dx - iconSize / 2,
@@ -198,36 +205,72 @@ class Agro360LogoLogin extends StatelessWidget {
     );
   }
 
-  Widget _centerIcon({
-    IconData? icon,
-    String? emoji,
-    required Color color,
-  }) {
-    final iconSize = size * 0.22;
+  Widget _iconBadge({required Widget child}) {
     return Container(
-      width: iconSize,
-      height: iconSize,
-      padding: EdgeInsets.all(iconSize * 0.16),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.22),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: child,
+    );
+  }
+
+  Widget _centerMark({required double size}) {
+    return Container(
+      width: size * 0.28,
+      height: size * 0.28,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFFFFF),
+            Color(0xFFE8F5E9),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
       child: Center(
-        child: emoji != null
-            ? FittedBox(
-                child: Text(
-                  emoji,
-                  style: TextStyle(fontSize: iconSize * 0.65),
-                ),
-              )
-            : Icon(icon, size: iconSize * 0.7, color: color),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Agro',
+              style: TextStyle(
+                fontSize: size * 0.075,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF2E7D32),
+                height: 1.0,
+                letterSpacing: 0.2,
+              ),
+            ),
+            Text(
+              '360',
+              style: TextStyle(
+                fontSize: size * 0.085,
+                fontWeight: FontWeight.w900,
+                color: const Color(0xFF1B5E20),
+                height: 1.0,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -238,7 +281,7 @@ class Agro360LogoLogin extends StatelessWidget {
 /// entre as três áreas do agro (trator, animal, lavoura).
 class _SyncArcsPainter extends CustomPainter {
   final List<Color> colors;
-  final double radiusFactor; // proporção do raio do arco em relação ao size
+  final double radiusFactor;
   final double strokeWidth;
   final double gapDegrees;
 
@@ -246,10 +289,9 @@ class _SyncArcsPainter extends CustomPainter {
     required this.colors,
     this.radiusFactor = 0.5,
     this.strokeWidth = 3,
-    this.gapDegrees = 18,
-  });
+  }) : gapDegrees = 18;
 
-  static const List<double> _startAngles = [270, 30, 150]; // topo, inf-dir, inf-esq
+  static const List<double> _startAngles = [270, 30, 150];
   static const double _sweep = 120;
 
   @override
@@ -273,14 +315,13 @@ class _SyncArcsPainter extends CustomPainter {
       final rect = Rect.fromCircle(center: center, radius: radius);
       canvas.drawArc(rect, startRad, sweepRad, false, paint);
 
-      // Seta na ponta do arco, na direção do movimento (sentido horário)
+      // Seta na ponta do arco (sentido horário)
       final endRad = startRad + sweepRad;
       final tip = Offset(
         center.dx + radius * cos(endRad),
         center.dy + radius * sin(endRad),
       );
 
-      // Direção tangente (sentido horário) no ponto final do arco
       final tangent = Offset(-sin(endRad), cos(endRad));
       final normal = Offset(cos(endRad), sin(endRad));
 

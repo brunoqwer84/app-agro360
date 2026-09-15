@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import '../controllers/animal_controller.dart';
 import '../models/animal.dart';
+import '../models/propriedade.dart';
+import '../models/raca.dart';
 import '../utils/app_colors.dart';
 
 /// Formulário de Animal (criar/editar)
@@ -23,7 +25,7 @@ class AnimalFormView extends GetView<AnimalController> {
     final idRaca = (args?.idRaca ?? 0).obs;
     final formKey = GlobalKey<FormState>();
 
-    Future<void> _selectDate() async {
+    Future<void> selectDate() async {
       final picked = await showDatePicker(
         context: context,
         locale: const Locale('pt', 'BR'),
@@ -73,7 +75,7 @@ class AnimalFormView extends GetView<AnimalController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<String>(
-                    value: sexo.value,
+                    initialValue: sexo.value,
                     decoration: _inputDecoration(
                       label: 'Sexo*',
                       hint: 'Selecione',
@@ -88,7 +90,7 @@ class AnimalFormView extends GetView<AnimalController> {
               const SizedBox(height: 16),
 
               Obx(() => InkWell(
-                    onTap: _selectDate,
+                    onTap: selectDate,
                     child: InputDecorator(
                       decoration: _inputDecoration(
                         label: 'Data de Nascimento',
@@ -104,7 +106,7 @@ class AnimalFormView extends GetView<AnimalController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<String>(
-                    value: tipoProducao.value,
+                    initialValue: tipoProducao.value,
                     decoration: _inputDecoration(
                       label: 'Tipo de Produção',
                       hint: 'Selecione',
@@ -120,7 +122,7 @@ class AnimalFormView extends GetView<AnimalController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<String>(
-                    value: status.value,
+                    initialValue: status.value,
                     decoration: _inputDecoration(
                       label: 'Status',
                       hint: 'Selecione',
@@ -136,7 +138,7 @@ class AnimalFormView extends GetView<AnimalController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<int>(
-                    value: idPropriedade.value > 0 ? idPropriedade.value : null,
+                    initialValue: idPropriedade.value > 0 ? idPropriedade.value : null,
                     decoration: _inputDecoration(
                       label: 'Propriedade*',
                       hint: controller.carregandoDropdowns.value ? 'Carregando...' : 'Selecione',
@@ -161,7 +163,7 @@ class AnimalFormView extends GetView<AnimalController> {
               const SizedBox(height: 16),
 
               Obx(() => DropdownButtonFormField<int>(
-                    value: idRaca.value > 0 ? idRaca.value : null,
+                      initialValue: idRaca.value > 0 ? idRaca.value : null,
                     decoration: _inputDecoration(
                       label: 'Raça*',
                       hint: controller.carregandoDropdowns.value ? 'Carregando...' : 'Selecione',
@@ -185,34 +187,45 @@ class AnimalFormView extends GetView<AnimalController> {
                   )),
               const SizedBox(height: 24),
 
-              Obx(() => Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.value
-                              ? null
-                              : () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final animal = Animal(
-                                      idAnimal: isEdit ? args.idAnimal : 0,
-                                      identificacao: identificacaoController.text.trim(),
-                                      sexo: sexo.value,
-                                      dataNascimento: dataNascimento.value,
-                                      tipoProducao: tipoProducao.value,
-                                      status: status.value,
-                                      idPropriedade: idPropriedade.value,
-                                      idRaca: idRaca.value,
-                                    );
-                                    if (isEdit) {
-                                      await controller.updateAnimal(
-                                          args.idAnimal, animal);
-                                    } else {
-                                      await controller.create(animal);
+Obx(() => Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: controller.isLoading.value
+                                ? null
+                                : () async {
+                                    if (formKey.currentState!.validate()) {
+                                      final propriedadeSelecionada = controller.propriedades
+                                          .firstWhere((p) => p.idPropriedade == idPropriedade.value);
+                                      final racaSelecionada = controller.racas
+                                          .firstWhere((r) => r.idRaca == idRaca.value);
+                                      final animal = Animal(
+                                        idAnimal: isEdit ? args.idAnimal : 0,
+                                        identificacao: identificacaoController.text.trim(),
+                                        sexo: sexo.value,
+                                        dataNascimento: dataNascimento.value,
+                                        tipoProducao: tipoProducao.value,
+                                        status: status.value,
+                                        propriedade: Propriedade(
+                                          idPropriedade: propriedadeSelecionada.idPropriedade,
+                                          nome: propriedadeSelecionada.nome,
+                                          ativo: propriedadeSelecionada.ativo,
+                                        ),
+                                        raca: Raca(
+                                          idRaca: racaSelecionada.idRaca,
+                                          descricao: racaSelecionada.descricao,
+                                        ),
+                                      );
+                                      if (isEdit) {
+                                        await controller.updateAnimal(
+                                            args.idAnimal, animal);
+                                      } else {
+                                        await controller.create(animal);
+                                      }
                                     }
-                                  }
-                                },
+                                  },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -245,7 +258,7 @@ class AnimalFormView extends GetView<AnimalController> {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: Text(
+                        child: const Text(
                           'Cancelar',
                           style: TextStyle(color: AppColors.primary),
                         ),

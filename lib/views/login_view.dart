@@ -3,17 +3,33 @@ import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../utils/app_logo.dart';
 import '../utils/app_colors.dart';
+import '../widgets/app_components.dart';
+import '../theme/app_theme.dart';
 
 /// Tela de Login - UX/UI moderna com novo conceito 360
-class LoginView extends GetView<AuthController> {
+class LoginView extends StatefulWidget {
   const LoginView({super.key});
 
   @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
+  final AuthController controller = Get.find<AuthController>();
+  final usernameController = TextEditingController();
+  final passwordController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  final obscurePassword = true.obs;
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final usernameController = TextEditingController();
-    final passwordController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final obscurePassword = true.obs;
 
     return Scaffold(
       body: Container(
@@ -27,262 +43,91 @@ class LoginView extends GetView<AuthController> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo com animação
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: const Duration(milliseconds: 800),
-                    curve: Curves.easeOutBack,
-                    builder: (context, value, child) {
-                      return Transform.scale(scale: value, child: child);
-                    },
-                    child: const Agro360LogoLogin(size: 120),
-                  ),
-                  const SizedBox(height: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Logo com animação de entrada
+                    _AnimatedLogo(),
+                    const SizedBox(height: AppSpacing.md),
 
-                  // Título
-                  const Text(
-                    'Agro360',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Visão completa do seu agro',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.9),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-
-                  // Card moderno
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 30.0, end: 0.0),
-                    duration: const Duration(milliseconds: 600),
-                    curve: Curves.easeOut,
-                    builder: (context, value, child) {
-                      return Transform.translate(
-                        offset: Offset(0, value),
-                        child: Opacity(opacity: 1 - (value / 30), child: child),
-                      );
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.card,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                    // Título
+                    Text(
+                      'Agro360',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        height: 1.2,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Form(
-                          key: formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Cabeçalho
-                              const Text(
-                                'Bem-vindo de volta',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Faça login para continuar',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Visão completa do seu agro',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxxl),
 
-                              // Username
-                              TextFormField(
-                                controller: usernameController,
-                                textInputAction: TextInputAction.next,
-                                decoration: _inputDecoration(
-                                  label: 'Usuário',
-                                  hint: 'seu.usuario',
-                                  icon: Icons.alternate_email,
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Digite o nome de usuário';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
+                    // Card do formulário
+                    _LoginCard(
+                      formKey: formKey,
+                      usernameController: usernameController,
+                      passwordController: passwordController,
+                      obscurePassword: obscurePassword,
+                      controller: controller,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
 
-                              // Senha com toggle
-                              Obx(() => TextFormField(
-                                    controller: passwordController,
-                                    obscureText: obscurePassword.value,
-                                    textInputAction: TextInputAction.done,
-                                    decoration: _inputDecoration(
-                                      label: 'Senha',
-                                      hint: '••••••',
-                                      icon: Icons.lock_outline,
-                                      suffix: IconButton(
-                                        icon: Icon(
-                                          obscurePassword.value
-                                              ? Icons.visibility_off_outlined
-                                              : Icons.visibility_outlined,
-                                        ),
-                                        onPressed: () {
-                                          obscurePassword.value =
-                                              !obscurePassword.value;
-                                        },
-                                      ),
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Digite a senha';
-                                      }
-                                      if (value.length < 6) {
-                                        return 'Mínimo 6 caracteres';
-                                      }
-                                      return null;
-                                    },
-                                  )),
-                              const SizedBox(height: 12),
-
-                              // Mensagens (erro/sucesso)
-                              Obx(() {
-                                if (controller.errorMessage.value.isNotEmpty) {
-                                  return _messageBanner(
-                                    message: controller.errorMessage.value,
-                                    isError: true,
-                                  );
-                                }
-                                if (controller.isSuccess.value) {
-                                  return _messageBanner(
-                                    message: 'Login realizado!',
-                                    isError: false,
-                                  );
-                                }
-                                return const SizedBox.shrink();
-                              }),
-                              const SizedBox(height: 16),
-
-                              // Botão Login
-                              Obx(() => SizedBox(
-                                    width: double.infinity,
-                                    height: 54,
-                                    child: ElevatedButton(
-                                      onPressed: controller.isLoading.value
-                                          ? null
-                                          : () async {
-                                              if (formKey.currentState!
-                                                  .validate()) {
-                                                controller.clearError();
-                                                await controller.login(
-                                                  usernameController.text.trim(),
-                                                  passwordController.text,
-                                                );
-                                              }
-                                            },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                        elevation: 3,
-                                        shadowColor: AppColors.shadowLight,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                      ),
-                                      child: controller.isLoading.value
-                                          ? const Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                SizedBox(
-                                                  width: 22,
-                                                  height: 22,
-                                                  child: CircularProgressIndicator(
-                                                    color: Colors.white,
-                                                    strokeWidth: 2.5,
-                                                  ),
-                                                ),
-                                                SizedBox(width: 12),
-                                                Text('Entrando...'),
-                                              ],
-                                            )
-                                          : const Text(
-                                              'Entrar',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                    ),
-                                  )),
-                            ],
+                    // Primeiro acesso
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Primeiro acesso?',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Primeiro acesso
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Primeiro acesso?',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 14,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => Get.toNamed('/register'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                        ),
-                        child: const Text(
-                          'Criar conta',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                            decorationColor: Colors.white,
+                        const SizedBox(width: AppSpacing.xs),
+                        TextButton(
+                          onPressed: () => Get.toNamed('/register'),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'Criar conta',
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Versão
-                  Text(
-                    'v1.0.0',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 12,
+                      ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Versão
+                    Text(
+                      'v1.0.0',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -290,74 +135,175 @@ class LoginView extends GetView<AuthController> {
       ),
     );
   }
+}
 
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.primary),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+class _AnimatedLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.scale(scale: value, child: child);
+      },
+      child: const Agro360LogoLogin(size: 120),
     );
   }
+}
 
-  Widget _messageBanner({
-    required String message,
-    required bool isError,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isError
-            ? AppColors.errorLight.withValues(alpha: 0.1)
-            : AppColors.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isError ? AppColors.error : AppColors.success,
+class _LoginCard extends StatelessWidget {
+  const _LoginCard({
+    required this.formKey,
+    required this.usernameController,
+    required this.passwordController,
+    required this.obscurePassword,
+    required this.controller,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final TextEditingController usernameController;
+  final TextEditingController passwordController;
+  final RxBool obscurePassword;
+  final AuthController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.extension<AppColorScheme>()!;
+    final textTheme = theme.extension<AppTextTheme>()!;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 30.0, end: 0.0),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, value),
+          child: Opacity(opacity: 1 - (value / 30), child: child),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow,
+              blurRadius: 32,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isError ? Icons.error_outline : Icons.check_circle_outline,
-            color: isError ? AppColors.error : AppColors.success,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: isError ? AppColors.error : AppColors.success,
-                fontSize: 13,
-              ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabeçalho
+                Text(
+                  'Bem-vindo de volta',
+                  style: textTheme.headlineMedium.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Faça login para continuar',
+                  style: textTheme.bodyMedium.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // Username
+                AppInput(
+                  label: 'Usuário',
+                  hint: 'seu.usuario',
+                  controller: usernameController,
+                  icon: Icons.alternate_email,
+                  textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.none,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Digite o nome de usuário';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Senha com toggle
+                Obx(() => AppInput(
+                      label: 'Senha',
+                      hint: '••••••',
+                      controller: passwordController,
+                      icon: Icons.lock_outline,
+                      obscureText: obscurePassword.value,
+                      textInputAction: TextInputAction.done,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword.value
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: () => obscurePassword.value = !obscurePassword.value,
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Digite a senha';
+                        }
+                        if (value.length < 6) {
+                          return 'Mínimo 6 caracteres';
+                        }
+                        return null;
+                      },
+                    )),
+                const SizedBox(height: AppSpacing.md),
+
+                // Mensagens (erro/sucesso)
+                Obx(() {
+                  if (controller.errorMessage.value.isNotEmpty) {
+                    return AppMessageBanner(
+                      message: controller.errorMessage.value,
+                      type: AppMessageType.error,
+                      onDismiss: controller.clearError,
+                    );
+                  }
+                  if (controller.isSuccess.value) {
+                    return const AppMessageBanner(
+                      message: 'Login realizado!',
+                      type: AppMessageType.success,
+                    );
+                  }
+                  return const SizedBox.shrink();
+                }),
+
+                const SizedBox(height: AppSpacing.lg),
+
+                // Botão Login
+                Obx(() => AppButton.primary(
+                      label: controller.isLoading.value ? 'Entrando...' : 'Entrar',
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () async {
+                              if (formKey.currentState!.validate()) {
+                                controller.clearError();
+                                await controller.login(
+                                  usernameController.text.trim(),
+                                  passwordController.text,
+                                );
+                              }
+                            },
+                      isLoading: controller.isLoading.value,
+                      size: AppButtonSize.large,
+                    )),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

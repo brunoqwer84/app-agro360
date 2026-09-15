@@ -106,7 +106,7 @@ class RacaFormView extends GetView<RacaController> {
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: () => Get.back(),
-                        child: Text(
+                        child: const Text(
                           'Cancelar',
                           style: TextStyle(color: AppColors.primary),
                         ),

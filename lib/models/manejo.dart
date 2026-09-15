@@ -1,40 +1,52 @@
+import 'animal.dart';
+import 'grupo.dart';
+import 'propriedade.dart';
+
 /// Model de Manejo
 /// Corresponde à entidade Manejo do backend
 class Manejo {
   final int idManejo;
-  final int idAnimal;
-  final int idPropriedade;
+  final Animal? animal;
+  final Propriedade? propriedade;
   final String tipo;
   final DateTime data;
   final String? observacao;
   final DateTime? criadoEm;
+  final Grupo? grupo;
   bool synced;
   DateTime? updatedAt;
 
+  // Helper fields for backward compatibility with views
+  final int idAnimal;
+  final int idPropriedade;
+
   Manejo({
     required this.idManejo,
-    required this.idAnimal,
-    required this.idPropriedade,
+    this.animal,
+    this.propriedade,
     required this.tipo,
     required this.data,
     this.observacao,
     this.criadoEm,
+    this.grupo,
     this.synced = false,
     this.updatedAt,
-  });
+  }) : idAnimal = animal?.idAnimal ?? 0,
+       idPropriedade = propriedade?.idPropriedade ?? 0;
 
   /// Cria instância a partir de JSON da API
   factory Manejo.fromJson(Map<String, dynamic> json) {
     return Manejo(
       idManejo: json['idManejo'] as int,
-      idAnimal: json['idAnimal'] as int,
-      idPropriedade: json['idPropriedade'] as int,
+      animal: json['animal'] != null ? Animal.fromJson(json['animal']) : null,
+      propriedade: json['propriedade'] != null ? Propriedade.fromJson(json['propriedade']) : null,
       tipo: json['tipo'] as String,
       data: DateTime.parse(json['data'] as String),
       observacao: json['observacao'] as String?,
       criadoEm: json['criadoEm'] != null
           ? DateTime.parse(json['criadoEm'] as String)
           : null,
+      grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : null,
       synced: true,
       updatedAt: DateTime.now(),
     );
@@ -44,14 +56,15 @@ class Manejo {
   factory Manejo.fromDatabase(Map<String, dynamic> map) {
     return Manejo(
       idManejo: map['id_manejo'] as int,
-      idAnimal: map['id_animal'] as int,
-      idPropriedade: map['id_propriedade'] as int,
+      animal: null,
+      propriedade: null,
       tipo: map['tipo'] as String,
       data: DateTime.parse(map['data'] as String),
       observacao: map['observacao'] as String?,
       criadoEm: map['criado_em'] != null
           ? DateTime.parse(map['criado_em'] as String)
           : null,
+      grupo: map['id_grupo'] != null ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true) : null,
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
@@ -62,7 +75,6 @@ class Manejo {
   /// Converte para JSON
   Map<String, dynamic> toJson() {
     return {
-      'idManejo': idManejo,
       'idAnimal': idAnimal,
       'idPropriedade': idPropriedade,
       'tipo': tipo,
@@ -82,6 +94,7 @@ class Manejo {
       'data': data.toIso8601String(),
       'observacao': observacao,
       'criado_em': criadoEm?.toIso8601String(),
+      'id_grupo': grupo?.idGrupo,
       'synced': synced ? 1 : 0,
       'updated_at': updatedAt?.toIso8601String(),
     };

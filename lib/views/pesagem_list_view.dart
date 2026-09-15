@@ -32,14 +32,14 @@ class PesagemListView extends GetView<PesagemController> {
             );
           }
           if (controller.pesagens.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.monitor_weight,
                       size: 64, color: AppColors.textHint),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     'Nenhuma pesagem cadastrada',
                     style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
                   ),
@@ -68,7 +68,7 @@ class PesagemListView extends GetView<PesagemController> {
                   ),
                   subtitle: Text(
                     'Manejo ${p.idManejo}${manejo != null ? ' - ${manejo.tipo}' : ''}',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

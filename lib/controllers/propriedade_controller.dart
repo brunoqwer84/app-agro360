@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../models/propriedade.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de Propriedades usando GetX
 class PropriedadeController extends GetxController {
@@ -16,16 +17,15 @@ class PropriedadeController extends GetxController {
     loadAll();
   }
 
-  /// Carrega todas as propriedades (minhas propriedades - filtradas por usuário)
+  /// Carrega todas as propriedades (do grupo do usuário)
   Future<void> loadAll() async {
     try {
       isLoading.value = true;
-      final lista = await _apiService.getMinhasPropriedades();
+      final lista = await _apiService.getPropriedadesAtivas();
       properties.assignAll(lista);
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -37,10 +37,9 @@ class PropriedadeController extends GetxController {
       isLoading.value = true;
       final lista = await _apiService.getPropriedadesAtivas();
       properties.assignAll(lista);
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -56,18 +55,16 @@ class PropriedadeController extends GetxController {
       Get.snackbar('Sucesso', 'Propriedade criada com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
-      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-/// Atualiza propriedade existente
+  /// Atualiza propriedade existente
   Future<bool> updatePropriedade(int id, Propriedade propriedade) async {
     try {
       isLoading.value = true;
@@ -79,11 +76,9 @@ class PropriedadeController extends GetxController {
       Get.snackbar('Sucesso', 'Propriedade atualizada com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
-      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -97,11 +92,10 @@ class PropriedadeController extends GetxController {
       await _apiService.deletePropriedade(id);
       properties.removeWhere((p) => p.idPropriedade == id);
       Get.snackbar('Sucesso', 'Propriedade deletada',
-            snackPosition: SnackPosition.BOTTOM);
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

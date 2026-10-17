@@ -34,7 +34,9 @@ class Pessoa {
       fone: json['fone'] as String?,
       email: json['email'] as String?,
       ativo: json['ativo'] as bool,
-      grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : Grupo(idGrupo: 0, nome: '', ativo: true),
+      grupo: json['grupo'] != null
+          ? Grupo.fromJson(json['grupo'])
+          : Grupo(idGrupo: 0, nome: '', ativo: true),
       synced: true,
       updatedAt: DateTime.now(),
     );

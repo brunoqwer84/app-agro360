@@ -37,7 +37,9 @@ class Propriedade {
       idPropriedade: map['id_propriedade'] as int,
       nome: map['nome'] as String,
       ativo: (map['ativo'] as int) == 1,
-      grupo: map['id_grupo'] != null ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true) : null,
+      grupo: map['id_grupo'] != null
+          ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true)
+          : null,
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)

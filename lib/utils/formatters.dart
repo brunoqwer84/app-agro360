@@ -24,7 +24,7 @@ class Formatters {
   static String formatCpf(String cpf) {
     final numbers = cpf.replaceAll(RegExp(r'[^0-9]'), '');
     if (numbers.length != 11) return cpf;
-    
+
     return '${numbers.substring(0, 3)}.${numbers.substring(3, 6)}.${numbers.substring(6, 9)}-${numbers.substring(9)}';
   }
 
@@ -32,33 +32,33 @@ class Formatters {
   static String formatCnpj(String cnpj) {
     final numbers = cnpj.replaceAll(RegExp(r'[^0-9]'), '');
     if (numbers.length != 14) return cnpj;
-    
+
     return '${numbers.substring(0, 2)}.${numbers.substring(2, 5)}.${numbers.substring(5, 8)}/${numbers.substring(8, 12)}-${numbers.substring(12)}';
   }
 
   /// Formata CPF ou CNPJ automaticamente
   static String formatCpfCnpj(String value) {
     final numbers = value.replaceAll(RegExp(r'[^0-9]'), '');
-    
+
     if (numbers.length == 11) {
       return formatCpf(numbers);
     } else if (numbers.length == 14) {
       return formatCnpj(numbers);
     }
-    
+
     return value;
   }
 
   /// Formata telefone ((00) 00000-0000 ou (00) 0000-0000)
   static String formatPhone(String phone) {
     final numbers = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    
+
     if (numbers.length == 11) {
       return '(${numbers.substring(0, 2)}) ${numbers.substring(2, 7)}-${numbers.substring(7)}';
     } else if (numbers.length == 10) {
       return '(${numbers.substring(0, 2)}) ${numbers.substring(2, 6)}-${numbers.substring(6)}';
     }
-    
+
     return phone;
   }
 

@@ -90,8 +90,10 @@ class _CowHeadPainter extends CustomPainter {
 
     // brilho nos olhos
     final highlightPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset(w * 0.34, eyeY - h * 0.01), w * 0.012, highlightPaint);
-    canvas.drawCircle(Offset(w * 0.68, eyeY - h * 0.01), w * 0.012, highlightPaint);
+    canvas.drawCircle(
+        Offset(w * 0.34, eyeY - h * 0.01), w * 0.012, highlightPaint);
+    canvas.drawCircle(
+        Offset(w * 0.68, eyeY - h * 0.01), w * 0.012, highlightPaint);
 
     // === FOCINHO (rosado) ===
     final muzzleFill = Paint()..color = const Color(0xFFFFB3C1);
@@ -106,11 +108,13 @@ class _CowHeadPainter extends CustomPainter {
     final nostrilW = w * 0.035;
     final nostrilH = h * 0.05;
     canvas.drawOval(
-      Rect.fromLTWH(w * 0.43 - nostrilW / 2, h * 0.70 - nostrilH / 2, nostrilW, nostrilH),
+      Rect.fromLTWH(
+          w * 0.43 - nostrilW / 2, h * 0.70 - nostrilH / 2, nostrilW, nostrilH),
       blackPaint,
     );
     canvas.drawOval(
-      Rect.fromLTWH(w * 0.57 - nostrilW / 2, h * 0.70 - nostrilH / 2, nostrilW, nostrilH),
+      Rect.fromLTWH(
+          w * 0.57 - nostrilW / 2, h * 0.70 - nostrilH / 2, nostrilW, nostrilH),
       blackPaint,
     );
 

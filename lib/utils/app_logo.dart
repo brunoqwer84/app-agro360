@@ -151,9 +151,12 @@ class Agro360LogoLogin extends StatelessWidget {
             child: CustomPaint(
               painter: _SyncArcsPainter(
                 colors: [
-                  const Color(0xFFFFB300).withValues(alpha: 0.95), // trator (âmbar)
-                  const Color(0xFF6D4C41).withValues(alpha: 0.95), // vaca (marrom)
-                  const Color(0xFF66BB6A).withValues(alpha: 0.95), // lavoura (verde)
+                  const Color(0xFFFFB300)
+                      .withValues(alpha: 0.95), // trator (âmbar)
+                  const Color(0xFF6D4C41)
+                      .withValues(alpha: 0.95), // vaca (marrom)
+                  const Color(0xFF66BB6A)
+                      .withValues(alpha: 0.95), // lavoura (verde)
                 ],
                 radiusFactor: 0.48,
                 strokeWidth: size * 0.024,
@@ -165,19 +168,25 @@ class Agro360LogoLogin extends StatelessWidget {
           _positionedIcon(
             angleDegrees: _angleTrator,
             child: _iconBadge(
-              child: TractorIcon(size: size * 0.20, color: const Color(0xFFFFB300)),
+              size: size * 0.26,
+              child: TractorIcon(
+                  size: size * 0.20, color: const Color(0xFFFFB300)),
             ),
           ),
           _positionedIcon(
             angleDegrees: _angleVaca,
             child: _iconBadge(
-              child: CowHeadIcon(size: size * 0.22, color: const Color(0xFF6D4C41)),
+              size: size * 0.26,
+              child: CowHeadIcon(
+                  size: size * 0.22, color: const Color(0xFF6D4C41)),
             ),
           ),
           _positionedIcon(
             angleDegrees: _angleLavoura,
             child: _iconBadge(
-              child: WheatIcon(size: size * 0.20, color: const Color(0xFF66BB6A)),
+              size: size * 0.26,
+              child:
+                  WheatIcon(size: size * 0.20, color: const Color(0xFF66BB6A)),
             ),
           ),
 
@@ -198,28 +207,38 @@ class Agro360LogoLogin extends StatelessWidget {
     final dy = radius * sin(angleRad);
     final iconSize = size * 0.26;
 
-    return Positioned(
-      left: size / 2 + dx - iconSize / 2,
-      top: size / 2 + dy - iconSize / 2,
-      child: child,
+    return Align(
+      alignment: Alignment.center,
+      child: Transform.translate(
+        offset: Offset(dx, dy),
+        child: SizedBox(
+          width: iconSize,
+          height: iconSize,
+          child: child,
+        ),
+      ),
     );
   }
 
-  Widget _iconBadge({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _iconBadge({required double size, required Widget child}) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.22),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Center(child: child),
       ),
-      child: child,
     );
   }
 

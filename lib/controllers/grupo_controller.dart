@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../models/grupo.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de Grupos/Empresas usando GetX
 class GrupoController extends GetxController {
@@ -22,10 +23,9 @@ class GrupoController extends GetxController {
       isLoading.value = true;
       final lista = await _apiService.getAllGrupos();
       groups.assignAll(lista);
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -37,10 +37,9 @@ class GrupoController extends GetxController {
       isLoading.value = true;
       final lista = await _apiService.getGruposAtivos();
       groups.assignAll(lista);
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -56,11 +55,9 @@ class GrupoController extends GetxController {
       Get.snackbar('Sucesso', 'Grupo criado com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
-      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -79,11 +76,9 @@ class GrupoController extends GetxController {
       Get.snackbar('Sucesso', 'Grupo atualizado com sucesso!',
           snackPosition: SnackPosition.BOTTOM);
       return true;
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
-      return false;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -98,10 +93,9 @@ class GrupoController extends GetxController {
       groups.removeWhere((g) => g.idGrupo == id);
       Get.snackbar('Sucesso', 'Grupo deletado',
           snackPosition: SnackPosition.BOTTOM);
-    } on String catch (e) {
-      Get.snackbar('Erro', e, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

@@ -1,277 +1,264 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import '../controllers/manejo_controller.dart';
-import '../controllers/animal_controller.dart';
 import '../controllers/propriedade_controller.dart';
 import '../models/manejo.dart';
-import '../models/animal.dart';
-import '../models/propriedade.dart';
-import '../models/raca.dart';
+import '../theme/app_theme.dart';
 import '../utils/app_colors.dart';
+import '../utils/formatters.dart';
+import '../widgets/app_components.dart';
 
 /// Formulário de Manejo (criar/editar)
-class ManejoFormView extends GetView<ManejoController> {
+class ManejoFormView extends StatefulWidget {
   const ManejoFormView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final args = Get.arguments as Manejo?;
-    final isEdit = args != null;
+  State<ManejoFormView> createState() => _ManejoFormViewState();
+}
 
-    final idAnimal = (args?.idAnimal ?? 0).obs;
-    final idPropriedade = (args?.idPropriedade ?? 0).obs;
-    final tipo = (args?.tipo ?? 'PESAGEM').obs;
-    final data = (args?.data ?? DateTime.now()).obs;
-    final observacao = (args?.observacao ?? '').obs;
-    final formKey = GlobalKey<FormState>();
+class _ManejoFormViewState extends State<ManejoFormView> {
+  final _formKey = GlobalKey<FormState>();
 
-    final animalController = Get.find<AnimalController>();
-    final propriedadeController = Get.find<PropriedadeController>();
+  late final ManejoController _controller;
+  late final PropriedadeController _propriedadeController;
+  late final TextEditingController _observacaoController;
+  late final TextEditingController _dataController;
 
-    Future<void> selectDate() async {
-      final picked = await showDatePicker(
-        context: context,
-        locale: const Locale('pt', 'BR'),
-        initialDate: data.value,
-        firstDate: DateTime(2000),
-        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+  final _idPropriedade = Rxn<int>();
+
+  late DateTime _data;
+
+  Manejo? _args;
+  bool _isEdit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.find<ManejoController>();
+    _propriedadeController = Get.find<PropriedadeController>();
+    _args = Get.arguments as Manejo?;
+    _isEdit = _args != null;
+
+    _data = _args?.data ?? DateTime.now();
+    _dataController = TextEditingController(text: Formatters.formatDate(_data));
+    _observacaoController =
+        TextEditingController(text: _args?.observacao ?? '');
+
+    final idPropriedade = _args?.idPropriedade ?? 0;
+    _idPropriedade.value = idPropriedade > 0 ? idPropriedade : null;
+  }
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    _dataController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectData() async {
+    final now = DateTime.now();
+    final initialDate = _data.isBefore(now) ? _data : now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: now,
+    );
+    if (picked == null) return;
+    _data = picked;
+    _dataController.text = Formatters.formatDate(picked);
+  }
+
+  Future<void> _submit() async {
+    if (_propriedadeController.properties.isEmpty) {
+      Get.snackbar(
+        'Atenção',
+        'Cadastre uma propriedade primeiro',
+        snackPosition: SnackPosition.BOTTOM,
       );
-      if (picked != null) {
-        data.value = picked;
-      }
+      return;
     }
 
+    if (!_formKey.currentState!.validate()) return;
+
+    final propriedadeSelecionada = _propriedadeController.properties
+        .firstWhereOrNull((p) => p.idPropriedade == _idPropriedade.value);
+
+    if (propriedadeSelecionada == null) {
+      Get.snackbar(
+        'Atenção',
+        'Selecione uma opção válida',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final observacao = _observacaoController.text.trim();
+
+    final manejo = Manejo(
+      idManejo: _isEdit ? _args!.idManejo : 0,
+      propriedade: propriedadeSelecionada,
+      data: _data,
+      observacao: observacao.isEmpty ? null : observacao,
+    );
+
+    if (_isEdit) {
+      await _controller.updateManejo(_args!.idManejo, manejo);
+    } else {
+      await _controller.create(manejo);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: Text(
-          isEdit ? 'Editar Manejo' : 'Novo Manejo',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: Text(_isEdit ? 'Editar Manejo' : 'Novo Manejo'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Obx(() => DropdownButtonFormField<int>(
-                    initialValue: idAnimal.value > 0 ? idAnimal.value : null,
-                    decoration: _inputDecoration(
-                      label: 'Animal*',
-                      hint: 'Selecione',
-                      icon: Icons.pets,
-                    ),
-                    items: animalController.animais
-                        .map((a) => DropdownMenuItem(
-                              value: a.idAnimal,
-                              child: Text(a.identificacao),
-                            ))
-                        .toList(),
-                    onChanged: animalController.animais.isEmpty
-                        ? null
-                        : (v) => idAnimal.value = v!,
-                    validator: (value) {
-                      if (value == null || value <= 0) {
-                        return 'Animal é obrigatório';
-                      }
-                      return null;
-                    },
-                  )),
-              const SizedBox(height: 16),
-
-              Obx(() => DropdownButtonFormField<int>(
-                    initialValue: idPropriedade.value > 0 ? idPropriedade.value : null,
-                    decoration: _inputDecoration(
-                      label: 'Propriedade*',
-                      hint: 'Selecione',
-                      icon: Icons.landscape,
-                    ),
-                    items: propriedadeController.properties
-                        .map((p) => DropdownMenuItem(
-                              value: p.idPropriedade,
-                              child: Text(p.nome),
-                            ))
-                        .toList(),
-                    onChanged: propriedadeController.properties.isEmpty
-                        ? null
-                        : (v) => idPropriedade.value = v!,
-                    validator: (value) {
-                      if (value == null || value <= 0) {
-                        return 'Propriedade é obrigatória';
-                      }
-                      return null;
-                    },
-                  )),
-              const SizedBox(height: 16),
-
-              Obx(() => DropdownButtonFormField<String>(
-                    initialValue: tipo.value,
-                    decoration: _inputDecoration(
-                      label: 'Tipo*',
-                      hint: 'Selecione',
-                      icon: Icons.category,
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'PESAGEM', child: Text('Pesagem')),
-                      DropdownMenuItem(value: 'VACINACAO', child: Text('Vacinação')),
-                      DropdownMenuItem(value: 'INSEMINACAO', child: Text('Inseminação')),
-                      DropdownMenuItem(value: 'TRATAMENTO', child: Text('Tratamento')),
-                    ],
-                    onChanged: (v) => tipo.value = v!,
-                  )),
-              const SizedBox(height: 16),
-
-              Obx(() => InkWell(
-                    onTap: selectDate,
-                    child: InputDecorator(
-                      decoration: _inputDecoration(
-                        label: 'Data*',
-                        hint: 'Selecione a data',
-                        icon: Icons.calendar_today,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Form(
+                key: _formKey,
+                child: AppCard(
+              padding: AppSpacing.lg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Icon(
+                          _isEdit ? Icons.edit_outlined : Icons.add_outlined,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
                       ),
-                      child: Text(
-                        DateFormat('dd/MM/yyyy').format(data.value),
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  )),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                initialValue: isEdit ? args.observacao : '',
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: _inputDecoration(
-                  label: 'Descrição',
-                  hint: 'Detalhes do manejo...',
-                  icon: Icons.description,
-                ),
-                onChanged: (v) => observacao.value = v,
-              ),
-              const SizedBox(height: 24),
-
-Obx(() => Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: controller.isLoading.value
-                                ? null
-                                : () async {
-                                    if (formKey.currentState!.validate()) {
-                                      final animalSelecionado = animalController.animais
-                                          .firstWhere((a) => a.idAnimal == idAnimal.value);
-                                      final propriedadeSelecionada = propriedadeController.properties
-                                          .firstWhere((p) => p.idPropriedade == idPropriedade.value);
-                                      final manejo = Manejo(
-                                        idManejo: isEdit ? args.idManejo : 0,
-                                        animal: Animal(
-                                          idAnimal: animalSelecionado.idAnimal,
-                                          identificacao: animalSelecionado.identificacao,
-                                          sexo: animalSelecionado.sexo,
-                                          propriedade: Propriedade(idPropriedade: 0, nome: '', ativo: true),
-                                          raca: Raca(idRaca: 0, descricao: ''),
-                                        ),
-                                        propriedade: Propriedade(
-                                          idPropriedade: propriedadeSelecionada.idPropriedade,
-                                          nome: propriedadeSelecionada.nome,
-                                          ativo: propriedadeSelecionada.ativo,
-                                        ),
-                                        tipo: tipo.value,
-                                        data: data.value,
-                                        observacao: observacao.value.isEmpty
-                                            ? null
-                                            : observacao.value,
-                                      );
-                                      if (isEdit) {
-                                        await controller.updateManejo(
-                                            args.idManejo, manejo);
-                                      } else {
-                                        await controller.create(manejo);
-                                      }
-                                    }
-                                  },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isEdit ? 'Editar Manejo' : 'Novo Manejo',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
-                          ),
-                          child: controller.isLoading.value
-                              ? const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text('Salvando...'),
-                                  ],
-                                )
-                              : Text(
-                                  isEdit ? 'Atualizar' : 'Criar',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: () => Get.back(),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: AppColors.primary),
+                            Text(
+                              _isEdit
+                                  ? 'Atualize as informações do manejo'
+                                  : 'Preencha os dados para cadastrar',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  )),
-            ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Obx(() {
+                    final propriedades = _propriedadeController.properties;
+                    final idSelecionado = propriedades
+                            .any((p) => p.idPropriedade == _idPropriedade.value)
+                        ? _idPropriedade.value
+                        : null;
+                    return AppDropdown<int>(
+                      label: 'Propriedade *',
+                      hint: 'Selecione',
+                      items: propriedades
+                          .map((p) => DropdownMenuItem(
+                                value: p.idPropriedade,
+                                child: Text(p.nome),
+                              ))
+                          .toList(),
+                      value: idSelecionado,
+                      onChanged: (v) {
+                        if (v != null) _idPropriedade.value = v;
+                      },
+                      enabled: propriedades.isNotEmpty,
+                      prefixIcon: Icons.landscape,
+                      validator: (value) {
+                        if (value == null || value <= 0) {
+                          return 'Propriedade é obrigatória';
+                        }
+                        return null;
+                      },
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.md),
+                  AppInput(
+                    label: 'Data *',
+                    hint: 'Selecione a data',
+                    controller: _dataController,
+                    readOnly: true,
+                    onTap: _selectData,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: _selectData,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Data é obrigatória';
+                      }
+                      if (_data.isAfter(DateTime.now())) {
+                        return 'A data não pode ser futura';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppInput(
+                    label: 'Descrição',
+                    hint: 'Detalhes do manejo...',
+                    controller: _observacaoController,
+                    icon: Icons.description,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Obx(
+                        () => AppButton.primary(
+                          label: _isEdit ? 'Atualizar' : 'Criar',
+                          onPressed:
+                              _controller.isLoading.value ? null : _submit,
+                          isLoading: _controller.isLoading.value,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      AppButton.outline(
+                        label: 'Cancelar',
+                        onPressed: () => Get.back(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.primary),
-      filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-    );
-  }
+    ),
+  ),
+);
+}
 }

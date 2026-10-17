@@ -30,11 +30,11 @@ class CustomValidators {
     if (value == null || value.isEmpty) {
       return 'Email é obrigatório';
     }
-    
+
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
-    
+
     if (!emailRegex.hasMatch(value)) {
       return 'Email inválido';
     }
@@ -46,14 +46,14 @@ class CustomValidators {
     if (value == null || value.isEmpty) {
       return 'CPF/CNPJ é obrigatório';
     }
-    
+
     // Remove caracteres não numéricos
     final numbers = value.replaceAll(RegExp(r'[^0-9]'), '');
-    
+
     if (numbers.length != 11 && numbers.length != 14) {
       return 'CPF/CNPJ inválido';
     }
-    
+
     return null;
   }
 
@@ -62,13 +62,13 @@ class CustomValidators {
     if (value == null || value.isEmpty) {
       return null; // Telefone é opcional
     }
-    
+
     final numbers = value.replaceAll(RegExp(r'[^0-9]'), '');
-    
+
     if (numbers.length < 10 || numbers.length > 11) {
       return 'Telefone inválido';
     }
-    
+
     return null;
   }
 

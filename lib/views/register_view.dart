@@ -1,607 +1,406 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-import '../controllers/grupo_controller.dart';
 import '../models/first_access_request.dart';
-import '../models/grupo.dart';
 import '../utils/formatters.dart';
-import '../utils/app_colors.dart';
+import '../utils/validators.dart';
+import '../widgets/app_components.dart';
+import '../theme/app_theme.dart';
+import '../routes/app_routes.dart';
 
-/// Tela de Primeiro Acesso - Design moderno
-class RegisterView extends GetView<AuthController> {
+/// Tela de Primeiro Acesso - cadastro que cria a conta e um novo grupo
+class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
 
   @override
+  State<RegisterView> createState() => _RegisterViewState();
+}
+
+class _RegisterViewState extends State<RegisterView> {
+  late final AuthController controller;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _nomeController = TextEditingController();
+  final TextEditingController _cpfCnpjController = TextEditingController();
+  final TextEditingController _foneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _nomeGrupoController = TextEditingController();
+  final TextEditingController _cnpjGrupoController = TextEditingController();
+  final TextEditingController _nomePropriedadeController =
+      TextEditingController();
+  final TextEditingController _nomeUsuarioController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
+  final TextEditingController _confirmaSenhaController =
+      TextEditingController();
+
+  final RxBool _obscureSenha = true.obs;
+  final RxBool _obscureConfirmaSenha = true.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put<AuthController>(AuthController(), permanent: true);
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _cpfCnpjController.dispose();
+    _foneController.dispose();
+    _emailController.dispose();
+    _nomeGrupoController.dispose();
+    _cnpjGrupoController.dispose();
+    _nomePropriedadeController.dispose();
+    _nomeUsuarioController.dispose();
+    _senhaController.dispose();
+    _confirmaSenhaController.dispose();
+    super.dispose();
+  }
+
+  void _applyMask(
+    TextEditingController field,
+    String Function(String) formatter,
+  ) {
+    final value = field.text;
+    final formatted = formatter(value);
+    if (formatted == value) return;
+    field.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+
+  String? _validateOptionalCnpj(String? value) {
+    if (value == null || value.isEmpty) return null;
+    final numbers = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numbers.length != 14) return 'CNPJ deve ter 14 dígitos';
+    return null;
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    controller.clearError();
+
+    final fone = _foneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final cnpjGrupo =
+        _cnpjGrupoController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final nomeGrupo = _nomeGrupoController.text.trim();
+    final nomePropriedade = _nomePropriedadeController.text.trim();
+
+    final request = FirstAccessRequest(
+      nome: _nomeController.text.trim(),
+      cpfCnpj: _cpfCnpjController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+      fone: fone.isEmpty ? null : fone,
+      email: _emailController.text.trim(),
+      nomeUsuario: _nomeUsuarioController.text.trim(),
+      senha: _senhaController.text,
+      nomeGrupo: nomeGrupo.isEmpty ? null : nomeGrupo,
+      cnpjGrupo: cnpjGrupo.isEmpty ? null : cnpjGrupo,
+      nomePropriedade: nomePropriedade.isEmpty ? null : nomePropriedade,
+    );
+
+    final ok = await controller.register(request);
+    if (ok) {
+      Get.snackbar(
+        'Sucesso',
+        'Cadastro realizado! Faça login para continuar.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      Get.offAllNamed(AppRoutes.login);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final grupoController = Get.find<GrupoController>();
-    final formKey = GlobalKey<FormState>();
-
-    final nomeController = TextEditingController();
-    final cpfCnpjController = TextEditingController();
-    final foneController = TextEditingController();
-    final emailController = TextEditingController();
-    final usuarioController = TextEditingController();
-    final senhaController = TextEditingController();
-    final confirmaSenhaController = TextEditingController();
-    final grupoSelecionado = Rxn<Grupo>();
-
-    final obscurePassword = true.obs;
-    final obscureConfirmPassword = true.obs;
-
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primaryDark, AppColors.primary, AppColors.accent],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App bar customizada
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0, vertical: 8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back,
-                          color: Colors.white),
-                      onPressed: () => Get.back(),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Primeiro Acesso',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+      appBar: AppBar(title: const Text('Primeiro Acesso')),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Center(
+            child: ConstrainedBox(
+              constraints:
+                  const BoxConstraints(maxWidth: AppBreakpoints.mobile),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildHeader(context),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildDadosPessoaisCard(context),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildFazendaCard(context),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildAcessoCard(context),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildErrorBanner(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildSubmitButton(),
+                  const SizedBox(height: AppSpacing.md),
+                  _buildLoginLink(context),
+                  const SizedBox(height: AppSpacing.md),
+                ],
               ),
-
-              // Conteúdo
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 8),
-
-                      // Ícone + título
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person_add,
-                          size: 60,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Criar sua conta',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        'Preencha seus dados para começar',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.85),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Card com formulário
-                      Card(
-                        elevation: 12,
-                        shadowColor: Colors.black26,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Form(
-                            key: formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Seção: Dados Pessoais
-                                _sectionTitle(
-                                  icon: Icons.badge,
-                                  title: 'Dados Pessoais',
-                                  color: Colors.blue.shade700,
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Nome completo
-                                TextFormField(
-                                  controller: nomeController,
-                                  textCapitalization:
-                                      TextCapitalization.words,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: _inputDecoration(
-                                    label: 'Nome completo*',
-                                    hint: 'Ex: João da Silva',
-                                    icon: Icons.person_outline,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null ||
-                                        value.trim().isEmpty) {
-                                      return 'Nome é obrigatório';
-                                    }
-                                    if (value.trim().length < 3) {
-                                      return 'Nome muito curto';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-
-                                // CPF/CNPJ
-                                TextFormField(
-                                  controller: cpfCnpjController,
-                                  keyboardType: TextInputType.number,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: _inputDecoration(
-                                    label: 'CPF / CNPJ*',
-                                    hint: 'Apenas números',
-                                    icon: Icons.document_scanner_outlined,
-                                  ),
-                                  onChanged: (value) {
-                                    final formatted =
-                                        Formatters.formatCpfCnpj(value);
-                                    if (formatted != value) {
-                                      cpfCnpjController.value =
-                                          TextEditingValue(
-                                        text: formatted,
-                                        selection: TextSelection.collapsed(
-                                          offset: formatted.length,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'CPF/CNPJ é obrigatório';
-                                    }
-                                    final numbers = value
-                                        .replaceAll(RegExp(r'[^0-9]'), '');
-                                    if (numbers.length != 11 &&
-                                        numbers.length != 14) {
-                                      return 'CPF deve ter 11 ou CNPJ 14 dígitos';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Telefone
-                                TextFormField(
-                                  controller: foneController,
-                                  keyboardType: TextInputType.phone,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: _inputDecoration(
-                                    label: 'Telefone',
-                                    hint: '(00) 00000-0000',
-                                    icon: Icons.phone_outlined,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Email
-                                TextFormField(
-                                  controller: emailController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: _inputDecoration(
-                                    label: 'Email*',
-                                    hint: 'seu@email.com',
-                                    icon: Icons.email_outlined,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Email é obrigatório';
-                                    }
-                                    final emailRegex = RegExp(
-                                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-                                    );
-                                    if (!emailRegex.hasMatch(value)) {
-                                      return 'Email inválido';
-                                    }
-                                    return null;
-                                  },
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                // Grupo/Empresa (opcional - para primeiro acesso)
-                                Obx(() => grupoController.groups.isNotEmpty
-                                    ? DropdownButtonFormField<Grupo>(
-                                        initialValue: grupoSelecionado.value,
-                                        decoration: _inputDecoration(
-                                          label: 'Grupo/Empresa (opcional)',
-                                          hint: 'Selecione ou deixe em branco para criar novo',
-                                          icon: Icons.business,
-                                        ),
-                                        items: grupoController.groups
-                                            .where((g) => g.ativo)
-                                            .map((g) => DropdownMenuItem(
-                                                  value: g,
-                                                  child: Text(g.nome),
-                                                ))
-                                            .toList(),
-                                        onChanged: (v) => grupoSelecionado.value = v,
-                                      )
-                                    : const SizedBox.shrink()),
-                                const SizedBox(height: 24),
-
-                                // Seção: Dados de Acesso
-                                _sectionTitle(
-                                  icon: Icons.lock_outline,
-                                  title: 'Dados de Acesso',
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Nome de usuário
-                                TextFormField(
-                                  controller: usuarioController,
-                                  textInputAction: TextInputAction.next,
-                                  decoration: _inputDecoration(
-                                    label: 'Nome de usuário*',
-                                    hint: '3 a 20 caracteres',
-                                    icon: Icons.alternate_email,
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Usuário é obrigatório';
-                                    }
-                                    if (value.length < 3) {
-                                      return 'Mínimo 3 caracteres';
-                                    }
-                                    if (value.length > 20) {
-                                      return 'Máximo 20 caracteres';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Senha
-                                Obx(() => TextFormField(
-                                      controller: senhaController,
-                                      obscureText: obscurePassword.value,
-                                      textInputAction: TextInputAction.next,
-                                      decoration: _inputDecoration(
-                                        label: 'Senha*',
-                                        hint: 'Mínimo 6 caracteres',
-                                        icon: Icons.lock_outline,
-                                        suffix: IconButton(
-                                          icon: Icon(
-                                            obscurePassword.value
-                                                ? Icons
-                                                    .visibility_off_outlined
-                                                : Icons.visibility_outlined,
-                                          ),
-                                          onPressed: () {
-                                            obscurePassword.value =
-                                                !obscurePassword.value;
-                                          },
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Senha é obrigatória';
-                                        }
-                                        if (value.length < 6) {
-                                          return 'Mínimo 6 caracteres';
-                                        }
-                                        return null;
-                                      },
-                                    )),
-                                const SizedBox(height: 12),
-
-                                // Confirmar senha
-                                Obx(() => TextFormField(
-                                      controller: confirmaSenhaController,
-                                      obscureText:
-                                          obscureConfirmPassword.value,
-                                      textInputAction: TextInputAction.done,
-                                      decoration: _inputDecoration(
-                                        label: 'Confirmar senha*',
-                                        hint: 'Repita a senha',
-                                        icon: Icons.lock_outline,
-                                        suffix: IconButton(
-                                          icon: Icon(
-                                            obscureConfirmPassword.value
-                                                ? Icons
-                                                    .visibility_off_outlined
-                                                : Icons.visibility_outlined,
-                                          ),
-                                          onPressed: () {
-                                            obscureConfirmPassword.value =
-                                                !obscureConfirmPassword.value;
-                                          },
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Confirme a senha';
-                                        }
-                                        if (value != senhaController.text) {
-                                          return 'As senhas não conferem';
-                                        }
-                                        return null;
-                                      },
-                                    )),
-
-                                const SizedBox(height: 16),
-
-                                // Mensagem de erro
-                                Obx(() {
-                                  if (controller.errorMessage.value
-                                      .isNotEmpty) {
-                                    return _messageBanner(
-                                      message: controller.errorMessage.value,
-                                      isError: true,
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                }),
-
-                                // Mensagem de sucesso
-                                Obx(() {
-                                  if (controller.isSuccess.value) {
-                                    return _messageBanner(
-                                      message:
-                                          'Cadastro realizado! Faça login para continuar.',
-                                      isError: false,
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                }),
-
-                                const SizedBox(height: 8),
-
-                                // Botão cadastrar
-                                Obx(() => SizedBox(
-                                      width: double.infinity,
-                                      height: 52,
-                                      child: ElevatedButton(
-                                        onPressed: controller.isLoading.value
-                                            ? null
-                                            : () async {
-                                                if (formKey.currentState!
-                                                    .validate()) {
-                                                  controller.clearError();
-                                                  controller.isSuccess.value =
-                                                      false;
-
-                                                  final cpfCnpjLimpo =
-                                                      cpfCnpjController.text
-                                                          .replaceAll(
-                                                              RegExp(
-                                                                  r'[^0-9]'),
-                                                              '');
-                                                  final foneLimpo =
-                                                      foneController.text
-                                                          .replaceAll(
-                                                              RegExp(
-                                                                  r'[^0-9]'),
-                                                              '');
-
-final request =
-                                                  FirstAccessRequest(
-                                                nome: nomeController.text
-                                                    .trim(),
-                                                cpfCnpj: cpfCnpjLimpo,
-                                                fone: foneLimpo.isEmpty
-                                                    ? null
-                                                    : foneLimpo,
-                                                email: emailController.text
-                                                    .trim(),
-                                                nomeUsuario:
-                                                    usuarioController.text
-                                                        .trim(),
-                                                senha: senhaController.text,
-                                                idGrupo: grupoSelecionado.value?.idGrupo,
-                                                nomeGrupo: grupoSelecionado.value?.nome,
-                                                cnpjGrupo: grupoSelecionado.value?.cnpj,
-                                                nomePropriedade: 'Minha Propriedade',
-                                              );
-
-                                                  final ok =
-                                                      await controller.register(
-                                                          request);
-                                                  if (ok) {
-                                                    await Future.delayed(
-                                                        const Duration(
-                                                            seconds: 2));
-                                                    Get.offAllNamed('/login');
-                                                  }
-                                                }
-                                              },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          foregroundColor: Colors.white,
-                                          elevation: 3,
-                                          shadowColor:
-                                              AppColors.shadowLight,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        child: controller.isLoading.value
-                                            ? const Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  SizedBox(
-                                                    height: 20,
-                                                    width: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      color: Colors.white,
-                                                      strokeWidth: 2,
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 12),
-                                                  Text('Cadastrando...'),
-                                                ],
-                                              )
-                                            : const Text(
-                                                'Criar cadastro',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight:
-                                                      FontWeight.w600,
-                                                ),
-                                              ),
-                                      ),
-                                    )),
-
-                                const SizedBox(height: 8),
-
-                                // Já tem conta? Voltar para login
-                                TextButton(
-                                  onPressed: () => Get.back(),
-                                  child: const Text(
-                                    'Já tem conta? Fazer login',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _sectionTitle({
-    required IconData icon,
-    required String title,
-    required Color color,
-  }) {
-    return Row(
+  Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).extension<AppColorScheme>()!;
+
+    return Column(
       children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            color: color,
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer.withValues(alpha: 0.5),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.person_add_outlined,
+            size: 48,
+            color: colorScheme.primary,
           ),
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Divider(
-            color: color.withValues(alpha: 0.3),
-            thickness: 1,
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Criar sua conta',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Preencha seus dados para começar. Um novo grupo será criado para você.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required List<Widget> children,
+  }) {
+    final colorScheme = Theme.of(context).extension<AppColorScheme>()!;
+
+    return AppCardSectioned(
+      header: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colorScheme.primary, size: 20),
+          const SizedBox(width: AppSpacing.sm),
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+        ],
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpacing.md),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDadosPessoaisCard(BuildContext context) {
+    return _buildSectionCard(
+      context: context,
+      icon: Icons.person_outline,
+      title: 'Dados pessoais',
+      children: [
+        AppInput(
+          label: 'Nome completo',
+          hint: 'Ex: João da Silva',
+          controller: _nomeController,
+          icon: Icons.person_outline,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+          validator: (value) =>
+              CustomValidators.validateRequired(value, 'Nome'),
+        ),
+        AppInput(
+          label: 'CPF / CNPJ',
+          hint: 'Apenas números',
+          controller: _cpfCnpjController,
+          icon: Icons.document_scanner_outlined,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (value) =>
+              _applyMask(_cpfCnpjController, Formatters.formatCpfCnpj),
+          validator: CustomValidators.validateCpfCnpj,
+        ),
+        AppInput(
+          label: 'Telefone (opcional)',
+          hint: '(00) 00000-0000',
+          controller: _foneController,
+          icon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (value) =>
+              _applyMask(_foneController, Formatters.formatPhone),
+          validator: CustomValidators.validatePhone,
+        ),
+        AppInput(
+          label: 'E-mail',
+          hint: 'seu@email.com',
+          controller: _emailController,
+          icon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          validator: CustomValidators.validateEmail,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFazendaCard(BuildContext context) {
+    return _buildSectionCard(
+      context: context,
+      icon: Icons.agriculture_outlined,
+      title: 'Sua fazenda/empresa',
+      children: [
+        AppInput(
+          label: 'Nome da fazenda/empresa (opcional)',
+          hint: 'Se vazio, usaremos seu nome',
+          controller: _nomeGrupoController,
+          icon: Icons.business_outlined,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+        ),
+        AppInput(
+          label: 'CNPJ da fazenda/empresa (opcional)',
+          hint: 'Apenas números',
+          controller: _cnpjGrupoController,
+          icon: Icons.apartment_outlined,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          onChanged: (value) =>
+              _applyMask(_cnpjGrupoController, Formatters.formatCnpj),
+          validator: _validateOptionalCnpj,
+        ),
+        AppInput(
+          label: 'Nome da propriedade (opcional)',
+          hint: 'Ex: Sítio Recanto',
+          controller: _nomePropriedadeController,
+          icon: Icons.home_work_outlined,
+          textCapitalization: TextCapitalization.words,
+          textInputAction: TextInputAction.next,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAcessoCard(BuildContext context) {
+    final colorScheme = Theme.of(context).extension<AppColorScheme>()!;
+
+    return _buildSectionCard(
+      context: context,
+      icon: Icons.lock_outline,
+      title: 'Acesso',
+      children: [
+        AppInput(
+          label: 'Nome de usuário',
+          hint: '3 a 20 caracteres',
+          controller: _nomeUsuarioController,
+          icon: Icons.badge_outlined,
+          textInputAction: TextInputAction.next,
+          validator: CustomValidators.validateUsername,
+        ),
+        Obx(
+          () => AppInput(
+            label: 'Senha',
+            hint: 'Mínimo 6 caracteres',
+            controller: _senhaController,
+            icon: Icons.lock_outline,
+            obscureText: _obscureSenha.value,
+            textInputAction: TextInputAction.next,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureSenha.value
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              onPressed: () => _obscureSenha.value = !_obscureSenha.value,
+            ),
+            validator: CustomValidators.validatePassword,
+          ),
+        ),
+        Obx(
+          () => AppInput(
+            label: 'Confirmar senha',
+            hint: 'Repita a senha',
+            controller: _confirmaSenhaController,
+            icon: Icons.lock_outline,
+            obscureText: _obscureConfirmaSenha.value,
+            textInputAction: TextInputAction.done,
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmaSenha.value
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              onPressed: () =>
+                  _obscureConfirmaSenha.value = !_obscureConfirmaSenha.value,
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Confirme a senha';
+              if (value != _senhaController.text) {
+                return 'As senhas não conferem';
+              }
+              return null;
+            },
           ),
         ),
       ],
     );
   }
 
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.primary),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 16,
-        horizontal: 14,
+  Widget _buildErrorBanner() {
+    return Obx(() {
+      final message = controller.errorMessage.value;
+      if (message.isEmpty) return const SizedBox.shrink();
+      return AppMessageBanner(
+        message: message,
+        type: AppMessageType.error,
+        onDismiss: controller.clearError,
+      );
+    });
+  }
+
+  Widget _buildSubmitButton() {
+    return Obx(
+      () => AppButton.primary(
+        label: controller.isLoading.value ? 'Cadastrando...' : 'Criar conta',
+        onPressed: _submit,
+        isLoading: controller.isLoading.value,
       ),
     );
   }
 
-  Widget _messageBanner({
-    required String message,
-    required bool isError,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isError
-            ? AppColors.errorLight.withValues(alpha: 0.1)
-            : AppColors.success.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isError ? AppColors.error : AppColors.success,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isError ? Icons.error_outline : Icons.check_circle_outline,
-            color: isError ? AppColors.error : AppColors.success,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: isError ? AppColors.error : AppColors.success,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
+  Widget _buildLoginLink(BuildContext context) {
+    final colorScheme = Theme.of(context).extension<AppColorScheme>()!;
+
+    return Center(
+      child: TextButton(
+        onPressed: () => Get.toNamed(AppRoutes.login),
+        style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
+        child: const Text('Já tem conta? Entrar'),
       ),
     );
   }

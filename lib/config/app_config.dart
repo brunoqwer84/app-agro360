@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 /// Configurações do aplicativo
 class AppConfig {
@@ -7,6 +8,10 @@ class AppConfig {
     // Prioridade: variável de ambiente > detecção automática > fallback
     const envUrl = String.fromEnvironment('API_BASE_URL');
     if (envUrl.isNotEmpty) return envUrl;
+
+    if (kIsWeb) {
+      return 'http://localhost:8080/api';
+    }
 
     if (Platform.isAndroid) {
       // Android Emulator: usa 10.0.2.2 para acessar localhost do host
@@ -61,16 +66,16 @@ class AppConfig {
   // Endpoints de pesagens
   static const String pesagens = '/pesagem';
   static const String pesagensPorManejo = '/pesagem/manejo';
+  static const String pesagensPorAnimal = '/pesagem/animal';
 
   // Endpoints de vacinações
   static const String vacinacoes = '/vacinacao';
   static const String vacinacoesPorManejo = '/vacinacao/manejo';
+  static const String vacinacoesPorAnimal = '/vacinacao/animal';
 
   // Endpoints de manejos
   static const String manejos = '/manejo';
-  static const String manejosPorAnimal = '/manejo/animal';
   static const String manejosPorPropriedade = '/manejo/propriedade';
-  static const String manejosPorTipo = '/manejo/tipo';
 
   // Timeouts
   static const Duration connectionTimeout = Duration(seconds: 30);
@@ -84,7 +89,7 @@ class AppConfig {
 
   // Banco de dados
   static const String databaseName = 'agro360.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 3;
 
   // Intervalo de sincronização automática (em minutos)
   static const int autoSyncInterval = 15;

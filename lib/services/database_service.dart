@@ -53,6 +53,8 @@ class DatabaseService {
         ativo INTEGER NOT NULL,
         id_pessoa INTEGER NOT NULL,
         nome_pessoa TEXT NOT NULL,
+        id_grupo INTEGER,
+        nome_grupo TEXT,
         synced INTEGER DEFAULT 0,
         updated_at TEXT
       )
@@ -125,19 +127,16 @@ class DatabaseService {
       )
     ''');
 
-    // Tabela de manejos
+    // Tabela de manejos (evento generico: propriedade + data + observacao)
     await db.execute('''
       CREATE TABLE manejo (
         id_manejo INTEGER PRIMARY KEY,
-        id_animal INTEGER NOT NULL,
         id_propriedade INTEGER NOT NULL,
-        tipo TEXT NOT NULL,
         data TEXT NOT NULL,
         observacao TEXT,
         criado_em TEXT,
         synced INTEGER DEFAULT 0,
         updated_at TEXT,
-        FOREIGN KEY (id_animal) REFERENCES animal(id_animal),
         FOREIGN KEY (id_propriedade) REFERENCES propriedade(id_propriedade)
       )
     ''');
@@ -147,10 +146,12 @@ class DatabaseService {
       CREATE TABLE pesagem (
         id_pesagem INTEGER PRIMARY KEY,
         id_manejo INTEGER NOT NULL,
+        id_animal INTEGER NOT NULL,
         peso_kg REAL NOT NULL,
         synced INTEGER DEFAULT 0,
         updated_at TEXT,
-        FOREIGN KEY (id_manejo) REFERENCES manejo(id_manejo)
+        FOREIGN KEY (id_manejo) REFERENCES manejo(id_manejo),
+        FOREIGN KEY (id_animal) REFERENCES animal(id_animal)
       )
     ''');
 
@@ -159,18 +160,80 @@ class DatabaseService {
       CREATE TABLE vacinacao (
         id_vacinacao INTEGER PRIMARY KEY,
         id_manejo INTEGER NOT NULL,
+        id_animal INTEGER NOT NULL,
         nome TEXT NOT NULL,
         proxima_dose TEXT NOT NULL,
         synced INTEGER DEFAULT 0,
         updated_at TEXT,
-        FOREIGN KEY (id_manejo) REFERENCES manejo(id_manejo)
+        FOREIGN KEY (id_manejo) REFERENCES manejo(id_manejo),
+        FOREIGN KEY (id_animal) REFERENCES animal(id_animal)
       )
     ''');
   }
 
   /// Atualiza o banco de dados para nova versão
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Implementar migrações futuras aqui
+    // v2: manejo passou a ser generico (sem animal/tipo); animal migrou para
+    // pesagem/vacinacao. Cache local - dropa e recria as tabelas afetadas
+    // (os dados sao re-obtidos do servidor na proxima sincizacao).
+    if (oldVersion < 2) {
+      await db.execute('DROP TABLE IF EXISTS vacinacao');
+      await db.execute('DROP TABLE IF EXISTS pesagem');
+      await db.execute('DROP TABLE IF EXISTS manejo');
+
+      await db.execute('''
+        CREATE TABLE manejo (
+          id_manejo INTEGER PRIMARY KEY,
+          id_propriedade INTEGER NOT NULL,
+          data TEXT NOT NULL,
+          observacao TEXT,
+          criado_em TEXT,
+          synced INTEGER DEFAULT 0,
+          updated_at TEXT,
+          FOREIGN KEY (id_propriedade) REFERENCES propriedade(id_propriedade)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE pesagem (
+          id_pesagem INTEGER PRIMARY KEY,
+          id_manejo INTEGER NOT NULL,
+          id_animal INTEGER NOT NULL,
+          peso_kg REAL NOT NULL,
+          synced INTEGER DEFAULT 0,
+          updated_at TEXT,
+          FOREIGN KEY (id_manejo) REFERENCES manejo(id_manejo),
+          FOREIGN KEY (id_animal) REFERENCES animal(id_animal)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE vacinacao (
+          id_vacinacao INTEGER PRIMARY KEY,
+          id_manejo INTEGER NOT NULL,
+          id_animal INTEGER NOT NULL,
+          nome TEXT NOT NULL,
+          proxima_dose TEXT NOT NULL,
+          synced INTEGER DEFAULT 0,
+          updated_at TEXT,
+          FOREIGN KEY (id_manejo) REFERENCES manejo(id_manejo),
+          FOREIGN KEY (id_animal) REFERENCES animal(id_animal)
+        )
+      ''');
+    }
+
+    // v3: cache do usuário passa a guardar o grupo (id + nome),
+    // para exibir mesmo offline.
+    if (oldVersion < 3) {
+      try {
+        await db.execute('ALTER TABLE usuario ADD COLUMN id_grupo INTEGER');
+      } catch (_) {
+        // coluna já existente
+      }
+      try {
+        await db.execute('ALTER TABLE usuario ADD COLUMN nome_grupo TEXT');
+      } catch (_) {
+        // coluna já existente
+      }
+    }
   }
 
   // ========== USUÁRIOS ==========
@@ -178,7 +241,7 @@ class DatabaseService {
   /// Salva usuário no banco local
   Future<void> saveUsuario(Usuario usuario) async {
     final db = await database;
-    
+
     await db.insert(
       'usuario',
       usuario.toDatabase(),
@@ -186,7 +249,8 @@ class DatabaseService {
     );
 
     // Salvar roles
-    await db.delete('usuario_roles', where: 'id_usuario = ?', whereArgs: [usuario.idUsuario]);
+    await db.delete('usuario_roles',
+        where: 'id_usuario = ?', whereArgs: [usuario.idUsuario]);
     for (final role in usuario.roles) {
       await db.insert('usuario_roles', {
         'id_usuario': usuario.idUsuario,
@@ -207,7 +271,7 @@ class DatabaseService {
     if (maps.isEmpty) return null;
 
     final usuario = Usuario.fromDatabase(maps.first);
-    
+
     // Carregar roles
     final roles = await db.query(
       'usuario_roles',
@@ -227,7 +291,7 @@ class DatabaseService {
     final usuarios = <Usuario>[];
     for (final map in maps) {
       final usuario = Usuario.fromDatabase(map);
-      
+
       // Carregar roles
       final roles = await db.query(
         'usuario_roles',
@@ -235,7 +299,7 @@ class DatabaseService {
         whereArgs: [usuario.idUsuario],
       );
       usuario.roles.addAll(roles.map((r) => r['role'] as String));
-      
+
       usuarios.add(usuario);
     }
 

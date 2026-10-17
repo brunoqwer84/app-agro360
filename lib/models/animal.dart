@@ -37,8 +37,8 @@ class Animal {
     this.grupo,
     this.synced = false,
     this.updatedAt,
-  }) : idPropriedade = propriedade.idPropriedade,
-       idRaca = raca.idRaca;
+  })  : idPropriedade = propriedade.idPropriedade,
+        idRaca = raca.idRaca;
 
   /// Cria instância a partir de JSON da API
   factory Animal.fromJson(Map<String, dynamic> json) {
@@ -57,8 +57,12 @@ class Animal {
       atualizadoEm: json['atualizadoEm'] != null
           ? DateTime.parse(json['atualizadoEm'] as String)
           : null,
-      propriedade: json['propriedade'] != null ? Propriedade.fromJson(json['propriedade']) : Propriedade(idPropriedade: 0, nome: '', ativo: true, grupo: null),
-      raca: json['raca'] != null ? Raca.fromJson(json['raca']) : Raca(idRaca: 0, descricao: '', grupo: null),
+      propriedade: json['propriedade'] != null
+          ? Propriedade.fromJson(json['propriedade'])
+          : Propriedade(idPropriedade: 0, nome: '', ativo: true, grupo: null),
+      raca: json['raca'] != null
+          ? Raca.fromJson(json['raca'])
+          : Raca(idRaca: 0, descricao: '', grupo: null),
       grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : null,
       synced: true,
       updatedAt: DateTime.now(),
@@ -82,9 +86,15 @@ class Animal {
       atualizadoEm: map['atualizado_em'] != null
           ? DateTime.parse(map['atualizado_em'] as String)
           : null,
-      propriedade: Propriedade(idPropriedade: map['id_propriedade'] as int, nome: '', ativo: true, grupo: null),
+      propriedade: Propriedade(
+          idPropriedade: map['id_propriedade'] as int,
+          nome: '',
+          ativo: true,
+          grupo: null),
       raca: Raca(idRaca: map['id_raca'] as int, descricao: '', grupo: null),
-      grupo: map['id_grupo'] != null ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true) : null,
+      grupo: map['id_grupo'] != null
+          ? Grupo(idGrupo: map['id_grupo'] as int, nome: '', ativo: true)
+          : null,
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)

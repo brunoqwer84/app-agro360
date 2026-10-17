@@ -9,7 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+  flutter_localizations:
+    sdk: flutter
+
   # Gerenciamento de estado e navegação
   get: ^4.6.6
   
@@ -28,15 +30,9 @@ dependencies:
   
   # UI e ícones
   cupertino_icons: ^1.0.2
-  
-  # Validação de formulários
-  validators: ^3.0.0
-  
+
   # Formatação de datas
-  intl: ^0.18.1
-  
-  # Loading e feedback visual
-  flutter_spinkit: ^5.2.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

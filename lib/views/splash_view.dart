@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../routes/app_routes.dart';
 import '../utils/app_logo.dart';
 import '../utils/app_colors.dart';
 import '../theme/app_theme.dart';
@@ -21,7 +24,9 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
   late final Animation<double> _logoOpacity;
   late final Animation<Offset> _textSlide;
   late final Animation<double> _textOpacity;
-  late final Animation<double> _progressAnimation;
+
+  /// Progresso da barra (0.0 a 1.0). É recriado a cada fase e NUNCA regride.
+  Animation<double>? _progressAnimation;
 
   @override
   void initState() {
@@ -47,42 +52,76 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
     );
 
     _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _logoController, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
+      CurvedAnimation(
+          parent: _logoController,
+          curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
     );
 
-    _textSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _textSlide =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
       CurvedAnimation(parent: _textController, curve: Curves.easeOutCubic),
     );
 
     _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _textController, curve: const Interval(0.0, 0.8, curve: Curves.easeOut)),
-    );
-
-    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _progressController, curve: Curves.easeInOut),
+      CurvedAnimation(
+          parent: _textController,
+          curve: const Interval(0.0, 0.8, curve: Curves.easeOut)),
     );
 
     _startAnimation();
   }
 
+  /// Sequência de fases: logo -> título -> verificação de login -> completo.
+  /// A barra avança a cada fase e só chega a 100% quando há resultado,
+  /// ao contrário de um repeat(reverse) que enche e volta.
   Future<void> _startAnimation() async {
+    // Fase 1: logo (barra avança em paralelo)
+    unawaited(_runProgress(0.35, const Duration(milliseconds: 900)));
     await _logoController.forward();
+
+    // Fase 2: título
+    unawaited(_runProgress(0.65, const Duration(milliseconds: 500)));
     await _textController.forward();
-    _progressController.repeat(reverse: true);
-    await _checkAuth();
+
+    // Fase 3: verificação de autenticação (avanço lento até quase o fim,
+    // esperando a resposta; se demorar, a barra fica em 90%)
+    unawaited(_runProgress(0.9, const Duration(milliseconds: 2500)));
+    final isAuthenticated = await _checkAuth();
+
+    // Fase 4: completa e navega
+    await _runProgress(1.0, const Duration(milliseconds: 250));
+    if (!mounted) return;
+    if (isAuthenticated) {
+      Get.offAllNamed(AppRoutes.home);
+    } else {
+      Get.offAllNamed(AppRoutes.login);
+    }
   }
 
-  Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(milliseconds: 2000));
-    if (!mounted) return;
-    final authController = Get.find<AuthController>();
+  /// Avança a barra do valor atual até [target], sem nunca regredir.
+  ///
+  /// Chamadas intermediárias são fire-and-forget (unawaited): ao serem
+  /// retargetadas, o TickerFuture anterior nunca completa, por isso
+  /// apenas a última chamada deve ser aguardada.
+  Future<void> _runProgress(double target, Duration duration) {
+    final begin = _progressAnimation?.value ?? 0.0;
+    _progressAnimation = _progressController.drive(
+      Tween<double>(begin: begin, end: target)
+          .chain(CurveTween(curve: Curves.easeOut)),
+    );
+    _progressController.duration = duration;
+    return _progressController.forward(from: 0);
+  }
+
+  /// Verifica se há sessão salva (token válido).
+  Future<bool> _checkAuth() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return false;
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put<AuthController>(AuthController(), permanent: true);
     await authController.checkAuthStatus();
-    if (!mounted) return;
-    if (authController.isAuthenticated.value) {
-      Get.offAllNamed('/home');
-    } else {
-      Get.offAllNamed('/login');
-    }
+    return authController.isAuthenticated.value;
   }
 
   @override
@@ -95,8 +134,6 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    Theme.of(context).extension<AppColorScheme>()!;
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -137,18 +174,24 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                         children: [
                           Text(
                             'Agro360',
-                            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 1.5,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 1.5,
+                                ),
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text(
                             'Gerenciamento Agropecuário',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.85),
+                                ),
                           ),
                         ],
                       ),
@@ -169,18 +212,21 @@ class _SplashViewState extends State<SplashView> with TickerProviderStateMixin {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(AppRadius.round),
                           child: LinearProgressIndicator(
-                            value: _progressAnimation.value,
-                            backgroundColor: Colors.white.withValues(alpha: 0.2),
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                            value: _progressAnimation?.value ?? 0.0,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.2),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                Colors.white),
                             minHeight: 4,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'Carregando...',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
                         ),
                       ],
                     ),

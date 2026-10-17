@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 import '../controllers/sync_controller.dart';
+import '../controllers/propriedade_controller.dart';
+import '../controllers/animal_controller.dart';
 import '../routes/app_routes.dart';
 import '../utils/app_colors.dart';
 import '../utils/cow_head_icon.dart';
@@ -19,18 +21,19 @@ class HomeView extends GetView<AuthController> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 800;
+        final isDesktop = constraints.maxWidth >= AppBreakpoints.tablet;
 
         if (isDesktop) {
-          return _buildDesktopLayout(syncController);
+          return _buildDesktopLayout(context, syncController);
         } else {
-          return _buildMobileLayout(syncController);
+          return _buildMobileLayout(context, syncController);
         }
       },
     );
   }
 
-  Widget _buildDesktopLayout(SyncController syncController) {
+  Widget _buildDesktopLayout(
+      BuildContext context, SyncController syncController) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Row(
@@ -46,7 +49,13 @@ class HomeView extends GetView<AuthController> {
               backgroundColor: AppColors.surface,
               appBar: _buildAppBar(syncController),
               body: RefreshIndicator(
-                onRefresh: () => syncController.syncAll(),
+                onRefresh: () async {
+                  await Future.wait([
+                    syncController.syncAll(),
+                    Get.find<PropriedadeController>().loadAll(),
+                    Get.find<AnimalController>().loadAll(),
+                  ]);
+                },
                 child: CustomScrollView(
                   slivers: [
                     SliverPadding(
@@ -54,7 +63,7 @@ class HomeView extends GetView<AuthController> {
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
                           // Informações do usuário
-                          _buildUserProfile(),
+                          _buildUserProfile(context),
                           const SizedBox(height: AppSpacing.xl),
 
                           // Cards de resumo
@@ -62,7 +71,7 @@ class HomeView extends GetView<AuthController> {
                           const SizedBox(height: AppSpacing.xl),
 
                           // Ações rápidas
-                          _buildQuickActions(),
+                          _buildQuickActions(context),
                         ]),
                       ),
                     ),
@@ -76,7 +85,8 @@ class HomeView extends GetView<AuthController> {
     );
   }
 
-  Widget _buildMobileLayout(SyncController syncController) {
+  Widget _buildMobileLayout(
+      BuildContext context, SyncController syncController) {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: _buildAppBar(syncController),
@@ -84,7 +94,13 @@ class HomeView extends GetView<AuthController> {
         selectedIndex: 0,
       ),
       body: RefreshIndicator(
-        onRefresh: () => syncController.syncAll(),
+        onRefresh: () async {
+          await Future.wait([
+            syncController.syncAll(),
+            Get.find<PropriedadeController>().loadAll(),
+            Get.find<AnimalController>().loadAll(),
+          ]);
+        },
         child: CustomScrollView(
           slivers: [
             SliverPadding(
@@ -92,7 +108,7 @@ class HomeView extends GetView<AuthController> {
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   // Informações do usuário
-                  _buildUserProfile(),
+                  _buildUserProfile(context),
                   const SizedBox(height: AppSpacing.xl),
 
                   // Cards de resumo
@@ -100,7 +116,7 @@ class HomeView extends GetView<AuthController> {
                   const SizedBox(height: AppSpacing.xl),
 
                   // Ações rápidas
-                  _buildQuickActions(),
+                  _buildQuickActions(context),
                 ]),
               ),
             ),
@@ -112,15 +128,7 @@ class HomeView extends GetView<AuthController> {
 
   PreferredSizeWidget _buildAppBar(SyncController syncController) {
     return AppBar(
-      title: const Text(
-        'Dashboard',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-        ),
-      ),
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
+      title: const Text('Dashboard'),
       elevation: 0,
       actions: [
         // Botão de sincronização
@@ -137,8 +145,8 @@ class HomeView extends GetView<AuthController> {
                   )
                 : Icon(
                     syncController.isConnected.value
-                        ? Icons.cloud_done
-                        : Icons.cloud_off,
+                        ? Icons.cloud_done_rounded
+                        : Icons.cloud_off_rounded,
                   ),
             onPressed: syncController.isSyncing.value
                 ? null
@@ -153,75 +161,143 @@ class HomeView extends GetView<AuthController> {
     );
   }
 
-  Widget _buildUserProfile() {
+  Widget _buildUserProfile(BuildContext context) {
     return Obx(() {
       final user = controller.currentUser.value;
       if (user == null) return const SizedBox.shrink();
 
-      return AppCard(
-        padding: AppSpacing.lg,
-        gradient: AppColors.cardGradient,
-        border: Border.all(color: AppColors.divider),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: AppColors.primary,
-              radius: 32,
-              child: Text(
-                user.nomePessoa.isNotEmpty
-                    ? user.nomePessoa[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+      final hour = DateTime.now().hour;
+      final greeting = hour < 12
+          ? 'Bom dia'
+          : hour < 18
+              ? 'Boa tarde'
+              : 'Boa noite';
+      final firstName = user.nomePessoa.isNotEmpty
+          ? user.nomePessoa.split(' ').first
+          : 'Produtor';
+
+      return Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.heroGradient,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadowMedium,
+              blurRadius: 16,
+              offset: Offset(0, 6),
             ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.nomePessoa,
-                    style: Theme.of(Get.context!).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '@${user.nomeUsuario}',
-                    style: Theme.of(Get.context!).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (user.isAdmin)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.round),
-                ),
-                child: const Text(
-                  'Admin',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-              ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              // Avatar com borda destacada
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    width: 2.5,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
+                  child: Text(
+                    user.nomePessoa.isNotEmpty
+                        ? user.nomePessoa[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+
+              // Informações do produtor
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$greeting, $firstName 👋',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        // Grupo / Empresa
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.round),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.business_rounded,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                user.grupo?.nome ?? 'Agro360',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Badge Admin
+                        if (user.isAdmin)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFDE68A),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.round),
+                            ),
+                            child: const Text(
+                              'Admin',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       );
     });
@@ -231,47 +307,67 @@ class HomeView extends GetView<AuthController> {
     return Obx(() {
       final user = controller.currentUser.value;
       final syncController = Get.find<SyncController>();
+      final propriedadeController = Get.find<PropriedadeController>();
+      final animalController = Get.find<AnimalController>();
+
+      final propriedadesCount = propriedadeController.properties.length;
+      final animaisCount = animalController.animais.length;
+      final grupoNome = user?.grupo?.nome ?? 'N/A';
+      final isConnected = syncController.isConnected.value;
 
       return LayoutBuilder(
         builder: (context, constraints) {
-          final crossAxisCount = constraints.maxWidth < 700 ? 2 : 4;
-          return GridView.count(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 2.0,
+          final crossAxisCount =
+              constraints.maxWidth < AppBreakpoints.tablet ? 2 : 4;
+          return GridView(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+              mainAxisExtent: 136,
+            ),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _SummaryCard(
-                title: 'Grupo',
-                value: user?.grupo?.nome ?? 'N/A',
-                icon: Icons.business,
-                color: AppColors.primary,
-                trend: null,
-              ),
-              _SummaryCard(
                 title: 'Propriedades',
-                value: '0',
-                icon: Icons.landscape,
-                color: Colors.teal.shade700,
-                trend: null,
+                value: propriedadesCount.toString(),
+                subtitle: propriedadesCount == 1
+                    ? '1 fazenda ativa'
+                    : '$propriedadesCount fazendas',
+                icon: Icons.landscape_rounded,
+                color: AppColors.categoryTeal,
+                onTap: () => Get.toNamed(AppRoutes.propriedades),
               ),
               _SummaryCard(
                 title: 'Animais',
-                value: '0',
-                icon: Icons.pets,
-                color: Colors.brown.shade600,
-                trend: null,
+                value: animaisCount.toString(),
+                subtitle: animaisCount == 1
+                    ? '1 animal ativo'
+                    : '$animaisCount no rebanho',
+                icon: Icons.pets_rounded,
+                color: AppColors.categoryBrown,
+                onTap: () => Get.toNamed(AppRoutes.animais),
+              ),
+              _SummaryCard(
+                title: 'Grupo / Empresa',
+                value: grupoNome,
+                subtitle: 'Unidade produtiva',
+                icon: Icons.business_rounded,
+                color: AppColors.categoryPurple,
+                onTap: () => Get.toNamed(AppRoutes.grupos),
               ),
               _SummaryCard(
                 title: 'Sincronização',
-                value: syncController.isConnected.value ? 'Online' : 'Offline',
-                icon: Icons.cloud,
-                color: syncController.isConnected.value
-                    ? Colors.green.shade700
-                    : Colors.red.shade700,
-                trend: syncController.isConnected.value ? 'Conectado' : 'Sem conexão',
+                value: isConnected ? 'Online' : 'Offline',
+                subtitle: isConnected ? 'Dados na nuvem' : 'Modo local',
+                icon: isConnected
+                    ? Icons.cloud_done_rounded
+                    : Icons.cloud_off_rounded,
+                color: isConnected ? AppColors.success : AppColors.error,
+                badgeType:
+                    isConnected ? AppStatusType.active : AppStatusType.error,
+                onTap: () => syncController.syncAll(),
               ),
             ],
           );
@@ -280,97 +376,113 @@ class HomeView extends GetView<AuthController> {
     });
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.flash_on_outlined, color: AppColors.primary, size: 24),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                'Ações Rápidas',
-                style: Theme.of(Get.context!).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
+              child: const Icon(
+                Icons.grid_view_rounded,
+                color: AppColors.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              'Módulos & Gestão',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth < 600
-                ? 3
-                : constraints.maxWidth < 900
-                    ? 4
-                    : constraints.maxWidth < 1200
-                        ? 5
-                        : 6;
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: AppSpacing.sm,
-              mainAxisSpacing: AppSpacing.sm,
-              childAspectRatio: 1.4,
+            final crossAxisCount = constraints.maxWidth < AppBreakpoints.mobile
+                ? 2
+                : constraints.maxWidth < AppBreakpoints.tablet
+                    ? 3
+                    : 4;
+            return GridView(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                mainAxisExtent: 88,
+              ),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 _ActionCard(
-                  icon: Icons.business_outlined,
-                  title: 'Grupos / Empresas',
-                  color: AppColors.primary,
-                  onTap: () => Get.toNamed(AppRoutes.grupos),
-                ),
-                _ActionCard(
-                  icon: Icons.landscape_outlined,
+                  icon: Icons.landscape_rounded,
                   title: 'Propriedades',
-                  color: Colors.teal.shade700,
+                  subtitle: 'Fazendas & pastos',
+                  color: AppColors.categoryTeal,
                   onTap: () => Get.toNamed(AppRoutes.propriedades),
                 ),
                 _ActionCard(
-                  icon: Icons.people_outline,
+                  icon: Icons.pets_rounded,
+                  title: 'Animais',
+                  subtitle: 'Rebanho & lotes',
+                  color: AppColors.categoryBrown,
+                  onTap: () => Get.toNamed(AppRoutes.animais),
+                ),
+                _ActionCard(
+                  icon: Icons.category_rounded,
+                  title: 'Raças',
+                  subtitle: 'Genética & raças',
+                  color: AppColors.categoryAmber,
+                  onTap: () => Get.toNamed(AppRoutes.racas),
+                  customIcon: const CowHeadIcon(size: 24),
+                ),
+                _ActionCard(
+                  icon: Icons.assignment_rounded,
+                  title: 'Manejos',
+                  subtitle: 'Eventos de campo',
+                  color: AppColors.categoryOrange,
+                  onTap: () => Get.toNamed(AppRoutes.manejos),
+                ),
+                _ActionCard(
+                  icon: Icons.monitor_weight_rounded,
+                  title: 'Pesagens',
+                  subtitle: 'Ganho de peso',
+                  color: AppColors.categoryBlue,
+                  onTap: () => Get.toNamed(AppRoutes.pesagens),
+                ),
+                _ActionCard(
+                  icon: Icons.medical_services_rounded,
+                  title: 'Vacinações',
+                  subtitle: 'Sanidade & doses',
+                  color: AppColors.categoryRed,
+                  onTap: () => Get.toNamed(AppRoutes.vacinacoes),
+                ),
+                _ActionCard(
+                  icon: Icons.business_rounded,
+                  title: 'Grupos',
+                  subtitle: 'Empresas & filiais',
+                  color: AppColors.categoryPurple,
+                  onTap: () => Get.toNamed(AppRoutes.grupos),
+                ),
+                _ActionCard(
+                  icon: Icons.people_rounded,
                   title: 'Pessoas',
-                  color: Colors.blue.shade700,
+                  subtitle: 'Equipe & contatos',
+                  color: AppColors.info,
                   onTap: () => Get.snackbar(
                     'Em desenvolvimento',
                     'Funcionalidade em breve',
                     backgroundColor: AppColors.info.withValues(alpha: 0.1),
                     colorText: AppColors.info,
                   ),
-                ),
-                _ActionCard(
-                  icon: Icons.pets_outlined,
-                  title: 'Animais',
-                  color: Colors.brown.shade600,
-                  onTap: () => Get.toNamed(AppRoutes.animais),
-                ),
-                _ActionCard(
-                  icon: Icons.category_outlined,
-                  title: 'Raças',
-                  color: Colors.amber.shade700,
-                  onTap: () => Get.toNamed(AppRoutes.racas),
-                  customIcon: const CowHeadIcon(size: 28),
-                ),
-                _ActionCard(
-                  icon: Icons.assignment_outlined,
-                  title: 'Manejos',
-                  color: Colors.orange.shade700,
-                  onTap: () => Get.toNamed(AppRoutes.manejos),
-                ),
-                _ActionCard(
-                  icon: Icons.monitor_weight_outlined,
-                  title: 'Pesagens',
-                  color: Colors.blue.shade700,
-                  onTap: () => Get.toNamed(AppRoutes.pesagens),
-                ),
-                _ActionCard(
-                  icon: Icons.medical_services_outlined,
-                  title: 'Vacinações',
-                  color: Colors.red.shade700,
-                  onTap: () => Get.toNamed(AppRoutes.vacinacoes),
                 ),
               ],
             );
@@ -381,21 +493,25 @@ class HomeView extends GetView<AuthController> {
   }
 }
 
-/// Card de resumo do dashboard
+/// Card de resumo métrico do dashboard
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
-    this.trend,
+    this.subtitle,
+    this.badgeType,
+    this.onTap,
   });
 
   final String title;
   final String value;
   final IconData icon;
   final Color color;
-  final String? trend;
+  final String? subtitle;
+  final AppStatusType? badgeType;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -404,52 +520,62 @@ class _SummaryCard extends StatelessWidget {
     final textTheme = theme.extension<AppTextTheme>()!;
 
     return AppCard(
-      padding: AppSpacing.sm,
-      onTap: () {},
+      padding: AppSpacing.md,
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.all(AppSpacing.sm),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
+                  color: color.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Icon(icon, size: 22, color: color),
+                child: Icon(icon, size: 20, color: color),
               ),
-              const Spacer(),
-              if (trend != null)
+              if (badgeType != null)
                 AppStatusBadge(
-                  label: trend!,
-                  type: color == Colors.green.shade700
-                      ? AppStatusType.active
-                      : color == Colors.red.shade700
-                          ? AppStatusType.error
-                          : AppStatusType.info,
+                  label: value,
+                  type: badgeType!,
                   size: AppStatusBadgeSize.small,
+                )
+              else
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            value,
-            style: textTheme.displaySmall.copyWith(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-              height: 1.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            title,
-            style: textTheme.labelMedium.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: textTheme.headlineSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                  height: 1.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle ?? title,
+                style: textTheme.labelSmall.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ],
       ),
@@ -457,11 +583,12 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-/// Card de ação rápida
+/// Card de ação rápida com design refinado
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
     required this.icon,
     required this.title,
+    required this.subtitle,
     required this.color,
     required this.onTap,
     this.customIcon,
@@ -469,6 +596,7 @@ class _ActionCard extends StatelessWidget {
 
   final IconData icon;
   final String title;
+  final String subtitle;
   final Color color;
   final VoidCallback onTap;
   final Widget? customIcon;
@@ -480,37 +608,58 @@ class _ActionCard extends StatelessWidget {
     final textTheme = theme.extension<AppTextTheme>()!;
 
     return AppCard(
-      padding: AppSpacing.xs,
+      padding: AppSpacing.sm + 2,
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: customIcon ??
-                Icon(
-                  icon,
-                  size: 22,
-                  color: color,
-                ),
+            child: Center(
+              child: customIcon ??
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: color,
+                  ),
+            ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Flexible(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: textTheme.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(width: AppSpacing.sm + 2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: textTheme.titleSmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: textTheme.bodySmall.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
+          ),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
           ),
         ],
       ),

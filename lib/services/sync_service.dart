@@ -10,6 +10,7 @@ class SyncService {
   final Connectivity _connectivity = Connectivity();
 
   bool _isSyncing = false;
+  bool _lastHadInternet = false;
   Timer? _autoSyncTimer;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
@@ -20,6 +21,16 @@ class SyncService {
         _databaseService = databaseService;
 
   Future<void> initialize() async {
+    // Captura o estado inicial de conectividade ANTES de assinar o stream,
+    // para que um evento inicial/repetido não dispare sincronização
+    // redundante (só sincroniza quando a conexão VOLTA: offline -> online).
+    try {
+      final result = await _connectivity.checkConnectivity();
+      _lastHadInternet = _hasInternet(result);
+    } catch (_) {
+      _lastHadInternet = false;
+    }
+
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
       (ConnectivityResult result) {
         _onConnectivityChanged(result);
@@ -27,35 +38,66 @@ class SyncService {
     );
   }
 
-  void _onConnectivityChanged(ConnectivityResult result) {
-    final hasInternet = result == ConnectivityResult.mobile ||
+  bool _hasInternet(ConnectivityResult result) {
+    return result == ConnectivityResult.mobile ||
         result == ConnectivityResult.wifi ||
         result == ConnectivityResult.ethernet;
+  }
 
-    if (hasInternet && !_isSyncing) {
-      syncAll();
+  void _onConnectivityChanged(ConnectivityResult result) {
+    final hasInternet = _hasInternet(result);
+
+    // Sincroniza apenas na transição offline -> online,
+    // nunca em eventos repetidos/iniciais do stream.
+    final voltouConexao = hasInternet && !_lastHadInternet;
+    _lastHadInternet = hasInternet;
+
+    if (voltouConexao && !_isSyncing) {
+      checkApiConnection().then((connected) {
+        if (connected) {
+          syncAll();
+        }
+      });
     }
   }
 
   Future<bool> hasConnection() async {
+    final hasNetwork = await checkNetworkConnectivity();
+    if (!hasNetwork) return false;
+    return await checkApiConnection();
+  }
+
+  Future<bool> checkNetworkConnectivity() async {
     final result = await _connectivity.checkConnectivity();
     return result == ConnectivityResult.mobile ||
         result == ConnectivityResult.wifi ||
         result == ConnectivityResult.ethernet;
   }
 
+  Future<bool> checkApiConnection() async {
+    try {
+      await _apiService.validateToken();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<SyncResult> syncAll() async {
+    // Flag ativada ANTES de qualquer await: dois disparos simultâneos
+    // passavam pela checagem antiga enquanto aguardavam hasConnection().
     if (_isSyncing) {
-      return SyncResult(success: false, message: 'Sincronização já em andamento');
+      return SyncResult(
+          success: false, message: 'Sincronização já em andamento');
     }
-
-    if (!await hasConnection()) {
-      return SyncResult(success: false, message: 'Sem conexão com a internet');
-    }
-
     _isSyncing = true;
 
     try {
+      if (!await hasConnection()) {
+        return SyncResult(
+            success: false, message: 'Sem conexão com a internet');
+      }
+
       int syncedCount = 0;
       final errors = <String>[];
 
@@ -71,8 +113,6 @@ class SyncService {
         }
       }
 
-      _isSyncing = false;
-
       return SyncResult(
         success: errors.isEmpty,
         message: errors.isEmpty
@@ -82,8 +122,9 @@ class SyncService {
         errors: errors,
       );
     } catch (e) {
-      _isSyncing = false;
       return SyncResult(success: false, message: 'Erro na sincronização: $e');
+    } finally {
+      _isSyncing = false;
     }
   }
 

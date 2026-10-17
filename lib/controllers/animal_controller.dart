@@ -3,6 +3,7 @@ import '../models/animal.dart';
 import '../models/propriedade.dart';
 import '../models/raca.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de Animais usando GetX
 class AnimalController extends GetxController {
@@ -113,7 +114,7 @@ class AnimalController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -132,7 +133,7 @@ class AnimalController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -148,7 +149,7 @@ class AnimalController extends GetxController {
       Get.snackbar('Sucesso', 'Animal deletado',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;

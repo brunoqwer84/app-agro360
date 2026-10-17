@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
@@ -6,6 +7,9 @@ import '../models/first_access_request.dart';
 import '../models/usuario.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
+import '../controllers/sync_controller.dart';
+import '../routes/app_routes.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de autenticação usando GetX
 class AuthController extends GetxController {
@@ -35,7 +39,7 @@ class AuthController extends GetxController {
   Future<void> checkAuthStatus() async {
     try {
       isLoading.value = true;
-      
+
       final prefs = await SharedPreferences.getInstance();
       final username = prefs.getString(AppConfig.usernameKey);
       final userId = prefs.getInt(AppConfig.userIdKey);
@@ -44,10 +48,13 @@ class AuthController extends GetxController {
         // Tentar validar o token
         try {
           await _apiService.validateToken();
-          
+
           // Token válido, carregar dados do usuário
           await loadUserData(username);
           isAuthenticated.value = true;
+
+          // Trigger sync after auto-login
+          _triggerPostLoginSync();
         } catch (e) {
           // Token inválido, fazer logout
           await logout();
@@ -56,7 +63,7 @@ class AuthController extends GetxController {
         isAuthenticated.value = false;
       }
     } catch (e) {
-      print('Erro ao verificar status de autenticação: $e');
+      debugPrint('Erro ao verificar status de autenticação: $e');
       isAuthenticated.value = false;
     } finally {
       isLoading.value = false;
@@ -94,16 +101,30 @@ class AuthController extends GetxController {
       // Salvar ID do usuário
       if (currentUser.value != null) {
         await prefs.setInt(AppConfig.userIdKey, currentUser.value!.idUsuario);
+      } else {
+        // Fallback seguro se busca na API falhar
+        currentUser.value = Usuario(
+          idUsuario: 0,
+          nomeUsuario: username,
+          ativo: true,
+          roles: const ['ROLE_USER'],
+          idPessoa: 0,
+          nomePessoa: username,
+        );
       }
 
       isAuthenticated.value = true;
-      
+      isLoading.value = false;
+
       // Navegar para home
-      Get.offAllNamed('/home');
-      
+      Get.offAllNamed(AppRoutes.home);
+
+      // Trigger sync after login
+      _triggerPostLoginSync();
+
       return true;
     } catch (e) {
-      errorMessage.value = e.toString();
+      errorMessage.value = AppError.getErrorMessage(e);
       isAuthenticated.value = false;
       return false;
     } finally {
@@ -117,11 +138,16 @@ class AuthController extends GetxController {
       // Tentar carregar da API
       final usuario = await _apiService.getUsuarioByUsername(username);
       currentUser.value = usuario;
-      
-      // Salvar no banco local
-      await _databaseService.saveUsuario(usuario);
+
+      // Cache local é best-effort: uma falha ao salvar NÃO deve substituir
+      // os dados válidos obtidos da API (evita exibir usuário desatualizado).
+      try {
+        await _databaseService.saveUsuario(usuario);
+      } catch (e) {
+        debugPrint('Falha ao salvar usuário no cache local: $e');
+      }
     } catch (e) {
-      // Se falhar, tentar carregar do banco local
+      // API indisponível: tentar carregar do banco local
       final usuarios = await _databaseService.getAllUsuarios();
       final usuario = usuarios.firstWhereOrNull(
         (u) => u.nomeUsuario == username,
@@ -148,7 +174,7 @@ class AuthController extends GetxController {
         return false;
       }
     } catch (e) {
-      errorMessage.value = e.toString();
+      errorMessage.value = AppError.getErrorMessage(e);
       return false;
     } finally {
       isLoading.value = false;
@@ -159,18 +185,18 @@ class AuthController extends GetxController {
   Future<void> logout() async {
     try {
       isLoading.value = true;
-      
+
       // Limpar token
       await _apiService.clearToken();
-      
+
       // Limpar dados do usuário
       currentUser.value = null;
       isAuthenticated.value = false;
-      
+
       // Navegar para login
-      Get.offAllNamed('/login');
+      Get.offAllNamed(AppRoutes.login);
     } catch (e) {
-      print('Erro ao fazer logout: $e');
+      debugPrint('Erro ao fazer logout: $e');
     } finally {
       isLoading.value = false;
     }
@@ -179,5 +205,18 @@ class AuthController extends GetxController {
   /// Limpa mensagem de erro
   void clearError() {
     errorMessage.value = '';
+  }
+
+  /// Trigger sync after login (fire and forget)
+  void _triggerPostLoginSync() {
+    // Use a small delay to allow home view to initialize
+    Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        final syncController = Get.find<SyncController>();
+        syncController.syncAll();
+      } catch (e) {
+        debugPrint('Erro ao iniciar sincronização pós-login: $e');
+      }
+    });
   }
 }

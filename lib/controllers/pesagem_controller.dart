@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../models/pesagem.dart';
 import '../models/manejo.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de Pesagens usando GetX
 class PesagemController extends GetxController {
@@ -71,7 +72,7 @@ class PesagemController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -91,7 +92,7 @@ class PesagemController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -107,7 +108,7 @@ class PesagemController extends GetxController {
       Get.snackbar('Sucesso', 'Pesagem deletada',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;

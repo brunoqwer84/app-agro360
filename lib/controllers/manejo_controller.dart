@@ -3,6 +3,7 @@ import '../models/manejo.dart';
 import '../models/animal.dart';
 import '../models/propriedade.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de Manejos usando GetX
 class ManejoController extends GetxController {
@@ -52,19 +53,6 @@ class ManejoController extends GetxController {
     }
   }
 
-  Future<void> getByAnimal(int id) async {
-    try {
-      isLoading.value = true;
-      final lista = await _apiService.getManejosPorAnimal(id);
-      manejos.assignAll(lista);
-    } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar manejos do animal',
-          snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
   Future<void> getByPropriedade(int id) async {
     try {
       isLoading.value = true;
@@ -72,19 +60,6 @@ class ManejoController extends GetxController {
       manejos.assignAll(lista);
     } catch (e) {
       Get.snackbar('Erro', 'Não foi possível carregar manejos da propriedade',
-          snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> getByTipo(String tipo) async {
-    try {
-      isLoading.value = true;
-      final lista = await _apiService.getManejosPorTipo(tipo);
-      manejos.assignAll(lista);
-    } catch (e) {
-      Get.snackbar('Erro', 'Não foi possível carregar manejos por tipo',
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
@@ -101,7 +76,7 @@ class ManejoController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -121,7 +96,7 @@ class ManejoController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -137,7 +112,7 @@ class ManejoController extends GetxController {
       Get.snackbar('Sucesso', 'Manejo deletado',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;

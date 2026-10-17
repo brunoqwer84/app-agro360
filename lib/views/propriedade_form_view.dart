@@ -20,7 +20,6 @@ class PropriedadeFormView extends GetView<PropriedadeController> {
     final formKey = GlobalKey<FormState>();
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       appBar: AppBar(
         title: Text(
           isEdit ? 'Editar Propriedade' : 'Nova Propriedade',
@@ -28,13 +27,16 @@ class PropriedadeFormView extends GetView<PropriedadeController> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // Card do formulário
                 AppCard(
                   padding: AppSpacing.lg,
@@ -62,18 +64,28 @@ class PropriedadeFormView extends GetView<PropriedadeController> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  isEdit ? 'Editar Propriedade' : 'Nova Propriedade',
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  isEdit
+                                      ? 'Editar Propriedade'
+                                      : 'Nova Propriedade',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                                 Text(
                                   isEdit
                                       ? 'Atualize as informações da propriedade'
                                       : 'Preencha os dados para cadastrar',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
                                 ),
                               ],
                             ),
@@ -106,7 +118,9 @@ class PropriedadeFormView extends GetView<PropriedadeController> {
                       Obx(() => SwitchListTile(
                             title: const Text('Propriedade ativa'),
                             subtitle: Text(
-                              ativo.value ? 'Disponível para uso' : 'Desativada',
+                              ativo.value
+                                  ? 'Disponível para uso'
+                                  : 'Desativada',
                             ),
                             value: ativo.value,
                             onChanged: (value) => ativo.value = value,
@@ -134,17 +148,23 @@ class PropriedadeFormView extends GetView<PropriedadeController> {
                                   onPressed: controller.isLoading.value
                                       ? null
                                       : () async {
-                                          if (formKey.currentState!.validate()) {
+                                          if (formKey.currentState!
+                                              .validate()) {
                                             final propriedade = Propriedade(
-                                              idPropriedade: isEdit ? args.idPropriedade : 0,
+                                              idPropriedade: isEdit
+                                                  ? args.idPropriedade
+                                                  : 0,
                                               nome: nomeController.text.trim(),
                                               ativo: ativo.value,
                                             );
 
                                             final ok = isEdit
-                                                ? await controller.updatePropriedade(
-                                                    args.idPropriedade, propriedade)
-                                                : await controller.create(propriedade);
+                                                ? await controller
+                                                    .updatePropriedade(
+                                                        args.idPropriedade,
+                                                        propriedade)
+                                                : await controller
+                                                    .create(propriedade);
 
                                             if (ok && !isEdit) {
                                               nomeController.clear();
@@ -166,6 +186,8 @@ class PropriedadeFormView extends GetView<PropriedadeController> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }

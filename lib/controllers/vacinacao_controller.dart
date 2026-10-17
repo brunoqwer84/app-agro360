@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../models/vacinacao.dart';
 import '../services/api_service.dart';
+import '../utils/error_messages.dart';
 
 /// Controller de Vacinações usando GetX
 class VacinacaoController extends GetxController {
@@ -52,7 +53,7 @@ class VacinacaoController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -72,7 +73,7 @@ class VacinacaoController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return true;
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
@@ -88,7 +89,7 @@ class VacinacaoController extends GetxController {
       Get.snackbar('Sucesso', 'Vacinação deletada',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Erro', e.toString(),
+      Get.snackbar('Erro', AppError.getErrorMessage(e),
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;

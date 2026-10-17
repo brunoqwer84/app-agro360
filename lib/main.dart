@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'theme/app_theme.dart';
 import 'routes/app_pages.dart';
@@ -34,6 +35,13 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'Agro360',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('pt', 'BR'),
+      supportedLocales: const [Locale('pt', 'BR')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: _buildTheme(),
       darkTheme: _buildDarkTheme(),
       themeMode: ThemeMode.light,
@@ -77,31 +85,30 @@ class MyApp extends StatelessWidget {
         inversePrimary: AppColors.primaryLight,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
         scrolledUnderElevation: 1,
         surfaceTintColor: Colors.transparent,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        titleTextStyle: base.textTheme.headlineSmall?.copyWith(
+        titleTextStyle: TextStyle(
           color: Colors.white,
+          fontSize: 18,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
+          letterSpacing: 0.3,
         ),
-        iconTheme: const IconThemeData(color: Colors.white, size: 24),
-        actionsIconTheme: const IconThemeData(color: Colors.white, size: 24),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.xl)),
-        ),
+        iconTheme: IconThemeData(color: Colors.white, size: 22),
+        actionsIconTheme: IconThemeData(color: Colors.white, size: 22),
       ),
       cardTheme: CardThemeData(
-        elevation: AppElevation.level1,
-        shadowColor: AppColors.shadowLight,
+        elevation: 0,
+        shadowColor: AppColors.shadow,
         surfaceTintColor: Colors.transparent,
         color: AppColors.card,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
+          side: const BorderSide(color: AppColors.divider, width: 1),
         ),
         margin: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
@@ -112,32 +119,44 @@ class MyApp extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           elevation: AppElevation.level1,
           shadowColor: AppColors.shadowLight,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-          textStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg)),
+          textStyle:
+              base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
           minimumSize: const Size(0, 48),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-          textStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg)),
+          textStyle:
+              base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-          textStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg)),
+          textStyle:
+              base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
           side: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-          textStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md)),
+          textStyle:
+              base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -169,19 +188,25 @@ class MyApp extends StatelessWidget {
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: AppColors.divider.withValues(alpha: 0.5), width: 1),
+          borderSide: BorderSide(
+              color: AppColors.divider.withValues(alpha: 0.5), width: 1),
         ),
-        labelStyle: base.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        hintStyle: base.textTheme.bodyMedium?.copyWith(color: AppColors.textHint),
+        labelStyle:
+            base.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        hintStyle:
+            base.textTheme.bodyMedium?.copyWith(color: AppColors.textHint),
         errorStyle: base.textTheme.bodySmall?.copyWith(color: AppColors.error),
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         prefixIconColor: AppColors.primary,
         suffixIconColor: AppColors.textHint,
       ),
       chipTheme: ChipThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.round)),
-        labelStyle: base.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.round)),
+        labelStyle:
+            base.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w500),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         side: const BorderSide(color: AppColors.divider),
         backgroundColor: AppColors.surface,
         selectedColor: AppColors.primaryContainer,
@@ -200,22 +225,28 @@ class MyApp extends StatelessWidget {
         endIndent: 0,
       ),
       listTileTheme: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         tileColor: Colors.transparent,
         selectedTileColor: AppColors.primaryContainer,
         iconColor: AppColors.textSecondary,
         textColor: AppColors.textPrimary,
-        titleTextStyle: base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-        subtitleTextStyle: base.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        leadingAndTrailingTextStyle: base.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        titleTextStyle:
+            base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        subtitleTextStyle:
+            base.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        leadingAndTrailingTextStyle:
+            base.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         minLeadingWidth: 40,
         horizontalTitleGap: AppSpacing.md,
         dense: true,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         elevation: AppElevation.level3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xl)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         extendedTextStyle: base.textTheme.labelLarge?.copyWith(
@@ -228,7 +259,8 @@ class MyApp extends StatelessWidget {
         backgroundColor: AppColors.card,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textHint,
-        selectedLabelStyle: base.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+        selectedLabelStyle:
+            base.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
         unselectedLabelStyle: base.textTheme.labelSmall,
         type: BottomNavigationBarType.fixed,
         landscapeLayout: BottomNavigationBarLandscapeLayout.spread,
@@ -256,10 +288,12 @@ class MyApp extends StatelessWidget {
       ),
       dialogTheme: DialogThemeData(
         elevation: AppElevation.level4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xxl)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xxl)),
         surfaceTintColor: Colors.transparent,
         backgroundColor: AppColors.card,
-        titleTextStyle: base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+        titleTextStyle:
+            base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         contentTextStyle: base.textTheme.bodyMedium,
         alignment: Alignment.center,
         actionsPadding: const EdgeInsets.all(AppSpacing.md),
@@ -267,7 +301,8 @@ class MyApp extends StatelessWidget {
       bottomSheetTheme: const BottomSheetThemeData(
         elevation: AppElevation.level4,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
         surfaceTintColor: Colors.transparent,
         backgroundColor: AppColors.card,
@@ -277,9 +312,11 @@ class MyApp extends StatelessWidget {
       ),
       snackBarTheme: SnackBarThemeData(
         elevation: AppElevation.level3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg)),
         backgroundColor: AppColors.textPrimary,
-        contentTextStyle: base.textTheme.bodyMedium?.copyWith(color: Colors.white),
+        contentTextStyle:
+            base.textTheme.bodyMedium?.copyWith(color: Colors.white),
         actionTextColor: AppColors.primaryLight,
         behavior: SnackBarBehavior.floating,
       ),
@@ -289,7 +326,8 @@ class MyApp extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         textStyle: base.textTheme.bodySmall?.copyWith(color: Colors.white),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         preferBelow: true,
         verticalOffset: 8,
       ),
@@ -304,7 +342,8 @@ class MyApp extends StatelessWidget {
         thumbColor: AppColors.primary,
         overlayColor: AppColors.primary.withValues(alpha: 0.15),
         valueIndicatorColor: AppColors.primary,
-        valueIndicatorTextStyle: base.textTheme.labelSmall?.copyWith(color: Colors.white),
+        valueIndicatorTextStyle:
+            base.textTheme.labelSmall?.copyWith(color: Colors.white),
         trackHeight: 4,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
       ),
@@ -314,7 +353,9 @@ class MyApp extends StatelessWidget {
           return AppColors.textHint;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return AppColors.primaryContainer;
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.primaryContainer;
+          }
           return AppColors.divider;
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
@@ -332,7 +373,8 @@ class MyApp extends StatelessWidget {
         }),
         checkColor: WidgetStateProperty.all(Colors.white),
         side: const BorderSide(color: AppColors.divider, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm)),
         visualDensity: VisualDensity.compact,
       ),
       radioTheme: RadioThemeData(
@@ -347,18 +389,24 @@ class MyApp extends StatelessWidget {
         unselectedLabelColor: AppColors.textHint,
         indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w400),
+        labelStyle:
+            base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        unselectedLabelStyle:
+            base.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w400),
         dividerColor: Colors.transparent,
-        overlayColor: WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.1)),
+        overlayColor:
+            WidgetStateProperty.all(AppColors.primary.withValues(alpha: 0.1)),
       ),
       expansionTileTheme: ExpansionTileThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
+        collapsedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md)),
         backgroundColor: AppColors.surface,
         collapsedBackgroundColor: Colors.transparent,
         tilePadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        childrenPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        childrenPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         iconColor: AppColors.textSecondary,
         collapsedIconColor: AppColors.textSecondary,
         textColor: AppColors.textPrimary,
@@ -392,21 +440,35 @@ class MyApp extends StatelessWidget {
           inversePrimary: AppColors.primary,
         ),
         AppTextTheme.light.copyWith(
-          displayLarge: AppTextTheme.light.displayLarge.copyWith(color: Colors.white),
-          displayMedium: AppTextTheme.light.displayMedium.copyWith(color: Colors.white),
-          displaySmall: AppTextTheme.light.displaySmall.copyWith(color: Colors.white),
-          headlineLarge: AppTextTheme.light.headlineLarge.copyWith(color: Colors.white),
-          headlineMedium: AppTextTheme.light.headlineMedium.copyWith(color: Colors.white),
-          headlineSmall: AppTextTheme.light.headlineSmall.copyWith(color: Colors.white),
-          titleLarge: AppTextTheme.light.titleLarge.copyWith(color: Colors.white),
-          titleMedium: AppTextTheme.light.titleMedium.copyWith(color: Colors.white),
-          titleSmall: AppTextTheme.light.titleSmall.copyWith(color: Colors.white),
+          displayLarge:
+              AppTextTheme.light.displayLarge.copyWith(color: Colors.white),
+          displayMedium:
+              AppTextTheme.light.displayMedium.copyWith(color: Colors.white),
+          displaySmall:
+              AppTextTheme.light.displaySmall.copyWith(color: Colors.white),
+          headlineLarge:
+              AppTextTheme.light.headlineLarge.copyWith(color: Colors.white),
+          headlineMedium:
+              AppTextTheme.light.headlineMedium.copyWith(color: Colors.white),
+          headlineSmall:
+              AppTextTheme.light.headlineSmall.copyWith(color: Colors.white),
+          titleLarge:
+              AppTextTheme.light.titleLarge.copyWith(color: Colors.white),
+          titleMedium:
+              AppTextTheme.light.titleMedium.copyWith(color: Colors.white),
+          titleSmall:
+              AppTextTheme.light.titleSmall.copyWith(color: Colors.white),
           bodyLarge: AppTextTheme.light.bodyLarge.copyWith(color: Colors.white),
-          bodyMedium: AppTextTheme.light.bodyMedium.copyWith(color: Colors.grey.shade300),
-          bodySmall: AppTextTheme.light.bodySmall.copyWith(color: Colors.grey.shade500),
-          labelLarge: AppTextTheme.light.labelLarge.copyWith(color: Colors.white),
-          labelMedium: AppTextTheme.light.labelMedium.copyWith(color: Colors.grey.shade300),
-          labelSmall: AppTextTheme.light.labelSmall.copyWith(color: Colors.grey.shade500),
+          bodyMedium: AppTextTheme.light.bodyMedium
+              .copyWith(color: Colors.grey.shade300),
+          bodySmall: AppTextTheme.light.bodySmall
+              .copyWith(color: Colors.grey.shade500),
+          labelLarge:
+              AppTextTheme.light.labelLarge.copyWith(color: Colors.white),
+          labelMedium: AppTextTheme.light.labelMedium
+              .copyWith(color: Colors.grey.shade300),
+          labelSmall: AppTextTheme.light.labelSmall
+              .copyWith(color: Colors.grey.shade500),
         ),
       ],
       colorScheme: ColorScheme.fromSeed(

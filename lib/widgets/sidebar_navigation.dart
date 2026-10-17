@@ -9,80 +9,150 @@ import '../theme/app_theme.dart';
 /// Sidebar de navegação lateral
 class SidebarNavigation extends StatelessWidget {
   final int selectedIndex;
-  final Function(int)? onItemTapped;
 
   const SidebarNavigation({
     super.key,
     required this.selectedIndex,
-    this.onItemTapped,
   });
 
   static const List<_SidebarSection> _sections = [
     _SidebarSection(
       title: 'Principal',
       items: [
-        _SidebarItemData(icon: Icons.dashboard_outlined, label: 'Dashboard', route: AppRoutes.home, index: 0),
+        _SidebarItemData(
+            icon: Icons.dashboard_outlined,
+            label: 'Dashboard',
+            route: AppRoutes.home,
+            index: 0),
       ],
     ),
     _SidebarSection(
       title: 'Cadastros',
       items: [
-        _SidebarItemData(icon: Icons.business_outlined, label: 'Grupos / Empresas', route: AppRoutes.grupos, index: 1),
-        _SidebarItemData(icon: Icons.landscape_outlined, label: 'Propriedades', route: AppRoutes.propriedades, index: 2),
-        _SidebarItemData(icon: Icons.people_outline, label: 'Pessoas', route: null, index: 3),
+        _SidebarItemData(
+            icon: Icons.business_outlined,
+            label: 'Grupos / Empresas',
+            route: AppRoutes.grupos,
+            index: 1),
+        _SidebarItemData(
+            icon: Icons.landscape_outlined,
+            label: 'Propriedades',
+            route: AppRoutes.propriedades,
+            index: 2),
+        _SidebarItemData(
+            icon: Icons.people_outline,
+            label: 'Pessoas',
+            route: null,
+            index: 3),
       ],
     ),
     _SidebarSection(
       title: 'Produção',
       items: [
-        _SidebarItemData(icon: Icons.pets_outlined, label: 'Animais', route: AppRoutes.animais, index: 4),
-        _SidebarItemData(icon: Icons.category_outlined, label: 'Raças', route: AppRoutes.racas, index: 5),
-        _SidebarItemData(icon: Icons.assignment_outlined, label: 'Manejos', route: AppRoutes.manejos, index: 6),
-        _SidebarItemData(icon: Icons.monitor_weight_outlined, label: 'Pesagens', route: AppRoutes.pesagens, index: 7),
-        _SidebarItemData(icon: Icons.medical_services_outlined, label: 'Vacinações', route: AppRoutes.vacinacoes, index: 8),
+        _SidebarItemData(
+            icon: Icons.pets_outlined,
+            label: 'Animais',
+            route: AppRoutes.animais,
+            index: 4),
+        _SidebarItemData(
+            icon: Icons.category_outlined,
+            label: 'Raças',
+            route: AppRoutes.racas,
+            index: 5),
+        _SidebarItemData(
+            icon: Icons.assignment_outlined,
+            label: 'Manejos',
+            route: AppRoutes.manejos,
+            index: 6),
+        _SidebarItemData(
+            icon: Icons.monitor_weight_outlined,
+            label: 'Pesagens',
+            route: AppRoutes.pesagens,
+            index: 7),
+        _SidebarItemData(
+            icon: Icons.medical_services_outlined,
+            label: 'Vacinações',
+            route: AppRoutes.vacinacoes,
+            index: 8),
       ],
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final authController = Get.find<AuthController>();
+    final authController = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put<AuthController>(AuthController(), permanent: true);
 
     return Container(
       width: 280,
-      color: AppColors.primaryDark,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F301B),
+        border: Border(
+          right: BorderSide(
+            color: Colors.white.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+      ),
       child: Column(
         children: [
           // Header com logo
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.primaryDark, AppColors.primary],
+                colors: [Color(0xFF0A2213), Color(0xFF154427)],
+              ),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  width: 1,
+                ),
               ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Agro360LogoLogin(size: 56),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Agro360',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Gerenciamento Agropecuário',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
+                Row(
+                  children: [
+                    const Agro360LogoLogin(size: 48),
+                    const SizedBox(width: AppSpacing.md),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Agro360',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                        ),
+                        Text(
+                          'Gestão Agropecuária',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontSize: 11,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -105,10 +175,11 @@ class SidebarNavigation extends StatelessWidget {
                     child: Text(
                       section.title.toUpperCase(),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            fontSize: 10,
+                          ),
                     ),
                   ),
                   // Section items
@@ -116,11 +187,12 @@ class SidebarNavigation extends StatelessWidget {
                         data: item,
                         isSelected: selectedIndex == item.index,
                         onTap: item.route != null
-                            ? () => onItemTapped?.call(item.index)
+                            ? () => Get.toNamed(item.route!)
                             : () => Get.snackbar(
                                   'Em desenvolvimento',
                                   'Funcionalidade em breve',
-                                  backgroundColor: AppColors.info.withValues(alpha: 0.1),
+                                  backgroundColor:
+                                      AppColors.info.withValues(alpha: 0.1),
                                   colorText: AppColors.info,
                                 ),
                       )),
@@ -133,8 +205,12 @@ class SidebarNavigation extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
+              color: const Color(0xFF0A2213),
               border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                top: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  width: 1,
+                ),
               ),
             ),
             child: Column(
@@ -143,25 +219,35 @@ class SidebarNavigation extends StatelessWidget {
                   final user = authController.currentUser.value;
                   return Row(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                        child: user?.nomePessoa.isNotEmpty == true
-                            ? Text(
-                                user!.nomePessoa[0].toUpperCase(),
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          child: user?.nomePessoa.isNotEmpty == true
+                              ? Text(
+                                  user!.nomePessoa[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  size: 18,
+                                  color: Colors.white,
                                 ),
-                              )
-                            : const Icon(
-                                Icons.person,
-                                size: 20,
-                                color: AppColors.primary,
-                              ),
+                        ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
+                      const SizedBox(width: AppSpacing.sm + 4),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,9 +262,9 @@ class SidebarNavigation extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              user?.nomeUsuario ?? '',
+                              user != null ? '@${user.nomeUsuario}' : '',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
+                                color: Colors.white.withValues(alpha: 0.55),
                                 fontSize: 11,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -186,28 +272,15 @@ class SidebarNavigation extends StatelessWidget {
                           ],
                         ),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded,
+                            size: 20, color: Colors.white70),
+                        tooltip: 'Sair da conta',
+                        onPressed: () => authController.logout(),
+                      ),
                     ],
                   );
                 }),
-                const SizedBox(height: AppSpacing.md),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Get.find<AuthController>().logout();
-                    },
-                    icon: const Icon(Icons.logout, size: 18),
-                    label: const Text('Sair'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
-                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -231,30 +304,53 @@ class _SidebarItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        data.icon,
-        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
-        size: 22,
-      ),
-      title: Text(
-        data.label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.85),
-          fontSize: 14,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: Icon(
+            data.icon,
+            color: isSelected
+                ? Colors.white
+                : Colors.white.withValues(alpha: 0.7),
+            size: 21,
+          ),
+          title: Text(
+            data.label,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.85),
+              fontSize: 13.5,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+            ),
+          ),
+          selected: isSelected,
+          selectedTileColor: const Color(0xFF237A4B),
+          onTap: onTap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: isSelected
+                ? BorderSide(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  )
+                : BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 2,
+          ),
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          hoverColor: Colors.white.withValues(alpha: 0.08),
+          splashColor: Colors.white.withValues(alpha: 0.12),
         ),
       ),
-      selected: isSelected,
-      selectedTileColor: AppColors.primary.withValues(alpha: 0.2),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-      dense: true,
-      visualDensity: VisualDensity.compact,
-      hoverColor: Colors.white.withValues(alpha: 0.1),
-      focusColor: Colors.white.withValues(alpha: 0.1),
-      splashColor: Colors.white.withValues(alpha: 0.15),
     );
   }
 }

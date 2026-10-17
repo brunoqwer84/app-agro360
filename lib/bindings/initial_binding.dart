@@ -11,16 +11,28 @@ import '../controllers/manejo_controller.dart';
 import '../controllers/pesagem_controller.dart';
 import '../controllers/vacinacao_controller.dart';
 
-/// Binding inicial para injeção de dependências
+/// Binding inicial para injeção de dependências globais
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<ApiService>(() => ApiService(), fenix: true);
-    Get.lazyPut<DatabaseService>(() => DatabaseService(), fenix: true);
-    Get.lazyPut<AuthController>(() => AuthController(), fenix: true);
+    // Serviços e controllers essenciais com ciclo de vida permanente
+    if (!Get.isRegistered<ApiService>()) {
+      Get.put<ApiService>(ApiService(), permanent: true);
+    }
+    if (!Get.isRegistered<DatabaseService>()) {
+      Get.put<DatabaseService>(DatabaseService(), permanent: true);
+    }
+    if (!Get.isRegistered<AuthController>()) {
+      Get.put<AuthController>(AuthController(), permanent: true);
+    }
+    if (!Get.isRegistered<SyncController>()) {
+      Get.put<SyncController>(SyncController(), permanent: true);
+    }
+
+    // Controllers de dados sob demanda com fenix: true (renascem se descartados)
     Get.lazyPut<GrupoController>(() => GrupoController(), fenix: true);
-    Get.lazyPut<SyncController>(() => SyncController(), fenix: true);
-    Get.lazyPut<PropriedadeController>(() => PropriedadeController(), fenix: true);
+    Get.lazyPut<PropriedadeController>(() => PropriedadeController(),
+        fenix: true);
     Get.lazyPut<RacaController>(() => RacaController(), fenix: true);
     Get.lazyPut<AnimalController>(() => AnimalController(), fenix: true);
     Get.lazyPut<ManejoController>(() => ManejoController(), fenix: true);

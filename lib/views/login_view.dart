@@ -5,6 +5,7 @@ import '../utils/app_logo.dart';
 import '../utils/app_colors.dart';
 import '../widgets/app_components.dart';
 import '../theme/app_theme.dart';
+import '../routes/app_routes.dart';
 
 /// Tela de Login - UX/UI moderna com novo conceito 360
 class LoginView extends StatefulWidget {
@@ -15,11 +16,19 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final AuthController controller = Get.find<AuthController>();
+  late final AuthController controller;
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   final obscurePassword = true.obs;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : Get.put<AuthController>(AuthController(), permanent: true);
+  }
 
   @override
   void dispose() {
@@ -30,14 +39,17 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [AppColors.primaryDark, AppColors.primary, AppColors.accent],
+            colors: [
+              AppColors.primaryDark,
+              AppColors.primary,
+              AppColors.accent
+            ],
           ),
         ),
         child: SafeArea(
@@ -59,20 +71,20 @@ class _LoginViewState extends State<LoginView> {
                       'Agro360',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        height: 1.2,
-                      ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            height: 1.2,
+                          ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       'Visão completa do seu agro',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        letterSpacing: 0.5,
-                      ),
+                            color: Colors.white.withValues(alpha: 0.9),
+                            letterSpacing: 0.5,
+                          ),
                     ),
                     const SizedBox(height: AppSpacing.xxxl),
 
@@ -92,26 +104,31 @@ class _LoginViewState extends State<LoginView> {
                       children: [
                         Text(
                           'Primeiro acesso?',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         TextButton(
-                          onPressed: () => Get.toNamed('/register'),
+                          onPressed: () => Get.toNamed(AppRoutes.register),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.xs),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           child: Text(
                             'Criar conta',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline,
-                              decorationColor: Colors.white,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: Colors.white,
+                                ),
                           ),
                         ),
                       ],
@@ -123,8 +140,8 @@ class _LoginViewState extends State<LoginView> {
                       'v1.0.0',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.7),
-                      ),
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
                     ),
                   ],
                 ),
@@ -213,7 +230,8 @@ class _LoginCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Faça login para continuar',
-                  style: textTheme.bodyMedium.copyWith(color: colorScheme.onSurfaceVariant),
+                  style: textTheme.bodyMedium
+                      .copyWith(color: colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: AppSpacing.xl),
 
@@ -249,7 +267,8 @@ class _LoginCard extends StatelessWidget {
                               : Icons.visibility_outlined,
                           color: colorScheme.onSurfaceVariant,
                         ),
-                        onPressed: () => obscurePassword.value = !obscurePassword.value,
+                        onPressed: () =>
+                            obscurePassword.value = !obscurePassword.value,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -285,7 +304,8 @@ class _LoginCard extends StatelessWidget {
 
                 // Botão Login
                 Obx(() => AppButton.primary(
-                      label: controller.isLoading.value ? 'Entrando...' : 'Entrar',
+                      label:
+                          controller.isLoading.value ? 'Entrando...' : 'Entrar',
                       onPressed: controller.isLoading.value
                           ? null
                           : () async {

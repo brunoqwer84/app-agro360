@@ -1,223 +1,366 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:get/get.dart';
-import '../controllers/vacinacao_controller.dart';
+import '../controllers/animal_controller.dart';
 import '../controllers/manejo_controller.dart';
-import '../models/vacinacao.dart';
+import '../controllers/vacinacao_controller.dart';
+import '../models/animal.dart';
 import '../models/manejo.dart';
+import '../models/vacinacao.dart';
+import '../theme/app_theme.dart';
 import '../utils/app_colors.dart';
+import '../utils/formatters.dart';
+import '../widgets/app_components.dart';
 
 /// Formulário de Vacinação (criar/editar)
-class VacinacaoFormView extends GetView<VacinacaoController> {
+class VacinacaoFormView extends StatefulWidget {
   const VacinacaoFormView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final args = Get.arguments as Vacinacao?;
-    final isEdit = args != null;
+  State<VacinacaoFormView> createState() => _VacinacaoFormViewState();
+}
 
-    final idManejo = (args?.idManejo ?? 0).obs;
-    final nome = (args?.nome ?? '').obs;
-    final proximaDose = (args?.proximaDose ?? DateTime.now()).obs;
-    final formKey = GlobalKey<FormState>();
+class _VacinacaoFormViewState extends State<VacinacaoFormView> {
+  final _formKey = GlobalKey<FormState>();
 
-    final manejoController = Get.find<ManejoController>();
-    final nomeController = TextEditingController(text: args?.nome ?? '');
+  late final VacinacaoController _controller;
+  late final ManejoController _manejoController;
+  late final AnimalController _animalController;
+  late final TextEditingController _nomeController;
+  late final TextEditingController _proximaDoseController;
 
-    Future<void> selectDate() async {
-      final picked = await showDatePicker(
-        context: context,
-        locale: const Locale('pt', 'BR'),
-        initialDate: proximaDose.value,
-        firstDate: DateTime(2000),
-        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+  final _idManejo = Rxn<int>();
+  final _idAnimal = Rxn<int>();
+
+  late DateTime _proximaDose;
+
+  Vacinacao? _args;
+  bool _isEdit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.find<VacinacaoController>();
+    _manejoController = Get.find<ManejoController>();
+    _animalController = Get.find<AnimalController>();
+    _args = Get.arguments as Vacinacao?;
+    _isEdit = _args != null;
+
+    _proximaDose = _args?.proximaDose ?? DateTime.now();
+    _proximaDoseController =
+        TextEditingController(text: Formatters.formatDate(_proximaDose));
+    _nomeController = TextEditingController(text: _args?.nome ?? '');
+
+    final idManejo = _args?.idManejo ?? 0;
+    _idManejo.value = idManejo > 0 ? idManejo : null;
+
+    final idAnimal = _args?.idAnimal ?? 0;
+    _idAnimal.value = idAnimal > 0 ? idAnimal : null;
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _proximaDoseController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectProximaDose() async {
+    final firstDate = DateTime(2000);
+    final lastDate = DateTime.now().add(const Duration(days: 365 * 5));
+    var initialDate = _proximaDose;
+    if (initialDate.isBefore(firstDate)) initialDate = firstDate;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+    if (picked == null) return;
+    _proximaDose = picked;
+    _proximaDoseController.text = Formatters.formatDate(picked);
+  }
+
+  Manejo? get _manejoSelecionado => _manejoController.manejos
+      .firstWhereOrNull((m) => m.idManejo == _idManejo.value);
+
+  List<Animal> get _animaisDoManejo {
+    final manejo = _manejoSelecionado;
+    if (manejo == null) return const [];
+    return _animalController.animais
+        .where((a) =>
+            a.propriedade.idPropriedade == manejo.propriedade?.idPropriedade)
+        .toList();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final manejoSelecionado = _manejoSelecionado;
+    if (manejoSelecionado == null) {
+      Get.snackbar(
+        'Atenção',
+        'Selecione uma opção válida',
+        snackPosition: SnackPosition.BOTTOM,
       );
-      if (picked != null) {
-        proximaDose.value = picked;
-      }
+      return;
     }
 
+    final animaisDoManejo = _animaisDoManejo;
+    final animalSelecionado =
+        animaisDoManejo.firstWhereOrNull((a) => a.idAnimal == _idAnimal.value);
+    if (animalSelecionado == null) {
+      Get.snackbar(
+        'Atenção',
+        animaisDoManejo.isEmpty
+            ? 'Nenhum animal nesta propriedade'
+            : 'Selecione um animal',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (!_proximaDose.isAfter(manejoSelecionado.data)) {
+      Get.snackbar(
+        'Atenção',
+        'A próxima dose deve ser posterior à data do manejo',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final vacinacao = Vacinacao(
+      idVacinacao: _isEdit ? _args!.idVacinacao : 0,
+      manejo: manejoSelecionado,
+      animal: animalSelecionado,
+      nome: _nomeController.text.trim(),
+      proximaDose: _proximaDose,
+    );
+
+    if (_isEdit) {
+      await _controller.updateVacinacao(_args!.idVacinacao, vacinacao);
+    } else {
+      await _controller.create(vacinacao);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: Text(
-          isEdit ? 'Editar Vacinação' : 'Nova Vacinação',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
+        title: Text(_isEdit ? 'Editar Vacinação' : 'Nova Vacinação'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Obx(() => DropdownButtonFormField<int>(
-                    initialValue: idManejo.value > 0 ? idManejo.value : null,
-                    decoration: _inputDecoration(
-                      label: 'Manejo*',
-                      hint: 'Selecione',
-                      icon: Icons.assignment,
-                    ),
-                    items: manejoController.manejos
-                        .map((m) => DropdownMenuItem(
-                              value: m.idManejo,
-                              child: Text(m.tipo),
-                            ))
-                        .toList(),
-                    onChanged: manejoController.manejos.isEmpty
-                        ? null
-                        : (v) => idManejo.value = v!,
-                    validator: (value) {
-                      if (value == null || value <= 0) {
-                        return 'Manejo é obrigatório';
-                      }
-                      return null;
-                    },
-                  )),
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: nomeController,
-                textCapitalization: TextCapitalization.words,
-                decoration: _inputDecoration(
-                  label: 'Nome da Vacina*',
-                  hint: 'Ex: Vacina Febre Aftosa',
-                  icon: Icons.medication,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Nome da vacina é obrigatório';
-                  }
-                  return null;
-                },
-                onChanged: (v) => nome.value = v,
-              ),
-              const SizedBox(height: 16),
-
-              Obx(() => InkWell(
-                    onTap: selectDate,
-                    child: InputDecorator(
-                      decoration: _inputDecoration(
-                        label: 'Próxima Dose*',
-                        hint: 'Selecione a data',
-                        icon: Icons.calendar_today,
-                      ),
-                      child: Text(
-                        DateFormat('dd/MM/yyyy').format(proximaDose.value),
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  )),
-              const SizedBox(height: 24),
-
-Obx(() => Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: controller.isLoading.value
-                                ? null
-                                : () async {
-                                    if (formKey.currentState!.validate()) {
-                                      final manejoSelecionado = manejoController.manejos
-                                          .firstWhere((m) => m.idManejo == idManejo.value);
-                                      final vacinacao = Vacinacao(
-                                        idVacinacao: isEdit ? args.idVacinacao : 0,
-                                        manejo: Manejo(
-                                          idManejo: manejoSelecionado.idManejo,
-                                          tipo: manejoSelecionado.tipo,
-                                          data: manejoSelecionado.data,
-                                        ),
-                                        nome: nome.value.trim(),
-                                        proximaDose: proximaDose.value,
-                                      );
-                                      if (isEdit) {
-                                        await controller.updateVacinacao(
-                                            args.idVacinacao, vacinacao);
-                                      } else {
-                                        await controller.create(vacinacao);
-                                      }
-                                    }
-                                  },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: controller.isLoading.value
-                              ? const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text('Salvando...'),
-                                  ],
-                                )
-                              : Text(
-                                  isEdit ? 'Atualizar' : 'Criar',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Form(
+                key: _formKey,
+                child: AppCard(
+              padding: AppSpacing.lg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryContainer,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Icon(
+                          _isEdit ? Icons.edit_outlined : Icons.add_outlined,
+                          color: AppColors.primary,
+                          size: 24,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: () => Get.back(),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: AppColors.primary),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isEdit ? 'Editar Vacinação' : 'Nova Vacinação',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              _isEdit
+                                  ? 'Atualize as informações da vacinação'
+                                  : 'Preencha os dados para cadastrar',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  )),
-            ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Obx(() {
+                    final manejos = _manejoController.manejos;
+                    final idSelecionado =
+                        manejos.any((m) => m.idManejo == _idManejo.value)
+                            ? _idManejo.value
+                            : null;
+                    return AppDropdown<int>(
+                      label: 'Manejo *',
+                      hint: 'Selecione',
+                      items: manejos
+                          .map((m) => DropdownMenuItem(
+                                value: m.idManejo,
+                                child: Text(
+                                    '${Formatters.formatDate(m.data)} • ${m.propriedade?.nome ?? ''}'),
+                              ))
+                          .toList(),
+                      value: idSelecionado,
+                      onChanged: (v) {
+                        if (v != null && v != _idManejo.value) {
+                          _idManejo.value = v;
+                          _idAnimal.value = null;
+                        }
+                      },
+                      enabled: manejos.isNotEmpty,
+                      prefixIcon: Icons.assignment,
+                      validator: (value) {
+                        if (value == null || value <= 0) {
+                          return 'Manejo é obrigatório';
+                        }
+                        return null;
+                      },
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.md),
+                  Obx(() {
+                    final manejoSelecionado = _manejoSelecionado;
+                    final animaisDoManejo = _animaisDoManejo;
+                    final animalSelecionado = animaisDoManejo
+                        .firstWhereOrNull((a) => a.idAnimal == _idAnimal.value);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppDropdown<Animal>(
+                          key: ValueKey('vacinacao-animal-${_idManejo.value}'),
+                          label: 'Animal *',
+                          hint: 'Selecione',
+                          items: animaisDoManejo
+                              .map((a) => DropdownMenuItem(
+                                    value: a,
+                                    child: Text(a.identificacao),
+                                  ))
+                              .toList(),
+                          value: animalSelecionado,
+                          onChanged: (v) {
+                            if (v != null) _idAnimal.value = v.idAnimal;
+                          },
+                          enabled: manejoSelecionado != null &&
+                              animaisDoManejo.isNotEmpty,
+                          prefixIcon: Icons.pets,
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Animal é obrigatório';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (manejoSelecionado != null &&
+                            animaisDoManejo.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: AppSpacing.sm,
+                              left: AppSpacing.md,
+                            ),
+                            child: Text(
+                              'Nenhum animal nesta propriedade',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.md),
+                  AppInput(
+                    label: 'Nome da Vacina *',
+                    hint: 'Ex: Vacina Febre Aftosa',
+                    controller: _nomeController,
+                    icon: Icons.medication,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Nome da vacina é obrigatório';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppInput(
+                    label: 'Próxima Dose *',
+                    hint: 'Selecione a data',
+                    controller: _proximaDoseController,
+                    readOnly: true,
+                    onTap: _selectProximaDose,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: _selectProximaDose,
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Próxima dose é obrigatória';
+                      }
+                      final manejo = _manejoSelecionado;
+                      if (manejo != null &&
+                          !_proximaDose.isAfter(manejo.data)) {
+                        return 'A próxima dose deve ser posterior à data do manejo';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Obx(
+                        () => AppButton.primary(
+                          label: _isEdit ? 'Atualizar' : 'Criar',
+                          onPressed:
+                              _controller.isLoading.value ? null : _submit,
+                          isLoading: _controller.isLoading.value,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      AppButton.outline(
+                        label: 'Cancelar',
+                        onPressed: () => Get.back(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.primary),
-      filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-    );
-  }
+    ),
+  ),
+);
+}
 }

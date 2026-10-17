@@ -71,10 +71,13 @@ class FirstAccessResponse {
     return FirstAccessResponse(
       sucesso: json['sucesso'] as bool? ?? false,
       mensagem: json['mensagem'] as String? ?? '',
-      idPessoa: json['idPessoa'] != null ? (json['idPessoa'] as num).toInt() : null,
-      idUsuario: json['idUsuario'] != null ? (json['idUsuario'] as num).toInt() : null,
+      idPessoa:
+          json['idPessoa'] != null ? (json['idPessoa'] as num).toInt() : null,
+      idUsuario:
+          json['idUsuario'] != null ? (json['idUsuario'] as num).toInt() : null,
       nomeUsuario: json['nomeUsuario'] as String?,
-      idGrupo: json['idGrupo'] != null ? (json['idGrupo'] as num).toInt() : null,
+      idGrupo:
+          json['idGrupo'] != null ? (json['idGrupo'] as num).toInt() : null,
     );
   }
 }

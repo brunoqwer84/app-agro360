@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../services/sync_service.dart';
 import '../services/api_service.dart';
@@ -24,44 +25,59 @@ class SyncController extends GetxController {
   Future<void> _initializeSyncService() async {
     final apiService = Get.find<ApiService>();
     final databaseService = Get.find<DatabaseService>();
-    
+
     _syncService = SyncService(
       apiService: apiService,
       databaseService: databaseService,
     );
-    
+
     await _syncService.initialize();
-    
+
     // Verificar conectividade inicial
     await checkConnectivity();
-    
+
     // Iniciar sincronização automática
     _syncService.startAutoSync();
   }
 
-  /// Verifica conectividade com a internet
+  /// Verifica conectividade com a API
   Future<void> checkConnectivity() async {
     try {
       final connected = await _syncService.hasConnection();
       isConnected.value = connected;
     } catch (e) {
-      print('Erro ao verificar conectividade: $e');
+      debugPrint('Erro ao verificar conectividade: $e');
+      isConnected.value = false;
+    }
+  }
+
+  /// Verifica apenas conectividade de rede (sem validar API)
+  Future<void> checkNetworkConnectivity() async {
+    try {
+      final connected = await _syncService.checkNetworkConnectivity();
+      isConnected.value = connected;
+    } catch (e) {
+      debugPrint('Erro ao verificar conectividade de rede: $e');
       isConnected.value = false;
     }
   }
 
   /// Sincroniza todos os dados
   Future<void> syncAll() async {
+    // Evita sincronização duplicada (ex.: gatilho pós-login + evento de
+    // conectividade): se já está sincronizando, ignora silenciosamente.
+    if (isSyncing.value) return;
+    isSyncing.value = true;
+
     try {
-      isSyncing.value = true;
       syncMessage.value = 'Sincronizando...';
       syncProgress.value = 0.0;
 
       final result = await _syncService.syncAll();
-      
+
       syncMessage.value = result.message;
       lastSyncTime.value = DateTime.now();
-      
+
       if (result.success) {
         syncProgress.value = 1.0;
         Get.snackbar(
@@ -85,6 +101,8 @@ class SyncController extends GetxController {
       );
     } finally {
       isSyncing.value = false;
+      // Verificar conectividade após sincronização
+      await checkConnectivity();
     }
   }
 
@@ -96,10 +114,10 @@ class SyncController extends GetxController {
       syncProgress.value = 0.0;
 
       final result = await _syncService.pullFromServer();
-      
+
       syncMessage.value = result.message;
       lastSyncTime.value = DateTime.now();
-      
+
       if (result.success) {
         syncProgress.value = 1.0;
         Get.snackbar(
@@ -123,6 +141,8 @@ class SyncController extends GetxController {
       );
     } finally {
       isSyncing.value = false;
+      // Verificar conectividade após download
+      await checkConnectivity();
     }
   }
 

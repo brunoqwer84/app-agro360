@@ -3,151 +3,170 @@ import 'package:get/get.dart';
 import '../controllers/raca_controller.dart';
 import '../models/raca.dart';
 import '../utils/app_colors.dart';
+import '../widgets/app_components.dart';
+import '../theme/app_theme.dart';
 
-class RacaFormView extends GetView<RacaController> {
+/// Formulário de Raça (criar/editar)
+class RacaFormView extends StatefulWidget {
   const RacaFormView({super.key});
 
   @override
+  State<RacaFormView> createState() => _RacaFormViewState();
+}
+
+class _RacaFormViewState extends State<RacaFormView> {
+  final _formKey = GlobalKey<FormState>();
+  late final Raca? _raca;
+  late final RacaController _controller;
+  late final TextEditingController _descricaoController;
+
+  bool get _isEdit => _raca != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.find<RacaController>();
+    _raca = Get.arguments as Raca?;
+    _descricaoController = TextEditingController(text: _raca?.descricao ?? '');
+  }
+
+  @override
+  void dispose() {
+    _descricaoController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _salvar() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final raca = Raca(
+      idRaca: _isEdit ? _raca!.idRaca : 0,
+      descricao: _descricaoController.text.trim(),
+    );
+
+    if (_isEdit) {
+      await _controller.updateRaca(_raca!.idRaca, raca);
+    } else {
+      final ok = await _controller.create(raca);
+      if (ok) _descricaoController.clear();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final args = Get.arguments as Raca?;
-    final isEdit = args != null;
-
-    final descricaoController = TextEditingController(text: args?.descricao ?? '');
-    final formKey = GlobalKey<FormState>();
-
     return Scaffold(
-      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: Text(
-          isEdit ? 'Editar Raça' : 'Nova Raça',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          _isEdit ? 'Editar Raça' : 'Nova Raça',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: descricaoController,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                decoration: _inputDecoration(
-                  label: 'Descrição da Raça*',
-                  hint: 'Ex: Nelore, Gir, Holandês',
-                  icon: Icons.pets,
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Descrição é obrigatória';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              Obx(() => Column(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Form(
+                key: _formKey,
+                child: AppCard(
+                  padding: AppSpacing.lg,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton(
-                          onPressed: controller.isLoading.value
-                              ? null
-                              : () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final raca = Raca(
-                                      idRaca: isEdit ? args.idRaca : 0,
-                                      descricao: descricaoController.text.trim(),
-                                    );
-                                    final ok = isEdit
-                                        ? await controller.updateRaca(
-                                            args.idRaca, raca)
-                                        : await controller.create(raca);
-
-                                    if (ok && !isEdit) {
-                                      descricaoController.clear();
-                                    }
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      // Cabeçalho
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.sm),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryContainer,
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                            child: Icon(
+                              _isEdit ? Icons.edit_outlined : Icons.pets_outlined,
+                              color: AppColors.primary,
+                              size: 24,
                             ),
                           ),
-                          child: controller.isLoading.value
-                              ? const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text('Salvando...'),
-                                  ],
-                                )
-                              : Text(
-                                  isEdit ? 'Atualizar' : 'Criar',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _isEdit ? 'Editar Raça' : 'Nova Raça',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
-                        ),
+                                Text(
+                                  _isEdit
+                                      ? 'Atualize a descrição da raça'
+                                      : 'Cadastre uma nova raça de animal',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: () => Get.back(),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: AppColors.primary),
-                        ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Input
+                      AppInput(
+                        label: 'Descrição da raça *',
+                        hint: 'Ex: Nelore, Angus, Girolando, Holandês',
+                        controller: _descricaoController,
+                        icon: Icons.pets,
+                        textCapitalization: TextCapitalization.words,
+                        textInputAction: TextInputAction.done,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Descrição é obrigatória';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Botões
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Obx(
+                            () => AppButton.primary(
+                              label: _isEdit ? 'Atualizar' : 'Criar',
+                              onPressed:
+                                  _controller.isLoading.value ? null : _salvar,
+                              isLoading: _controller.isLoading.value,
+                              size: AppButtonSize.large,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          AppButton.outline(
+                            label: 'Cancelar',
+                            onPressed: Get.back,
+                            size: AppButtonSize.large,
+                          ),
+                        ],
                       ),
                     ],
-                  )),
-            ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _inputDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.primary),
-      filled: true,
-      fillColor: AppColors.surface,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.divider),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
     );
   }
 }

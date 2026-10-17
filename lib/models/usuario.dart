@@ -31,7 +31,9 @@ class Usuario {
       idUsuario: (json['idUsuario'] as num?)?.toInt() ?? 0,
       nomeUsuario: json['nomeUsuario'] as String? ?? '',
       ativo: json['ativo'] as bool? ?? false,
-      roles: (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      roles:
+          (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+              [],
       idPessoa: (json['idPessoa'] as num?)?.toInt() ?? 0,
       nomePessoa: json['nomePessoa'] as String? ?? '',
       grupo: json['grupo'] != null ? Grupo.fromJson(json['grupo']) : null,
@@ -43,6 +45,7 @@ class Usuario {
   /// Cria instância a partir de banco de dados local (SQLite)
   factory Usuario.fromDatabase(Map<String, dynamic> map) {
     final idGrupo = (map['id_grupo'] as num?)?.toInt();
+    final nomeGrupo = map['nome_grupo'] as String?;
     return Usuario(
       idUsuario: map['id_usuario'] as int,
       nomeUsuario: map['nome_usuario'] as String,
@@ -50,7 +53,9 @@ class Usuario {
       roles: [], // Roles serão carregadas em query separada
       idPessoa: map['id_pessoa'] as int,
       nomePessoa: map['nome_pessoa'] as String,
-      grupo: idGrupo != null ? Grupo(idGrupo: idGrupo, nome: '', ativo: true) : null,
+      grupo: idGrupo != null
+          ? Grupo(idGrupo: idGrupo, nome: nomeGrupo ?? '', ativo: true)
+          : null,
       synced: (map['synced'] as int?) == 1,
       updatedAt: map['updated_at'] != null
           ? DateTime.parse(map['updated_at'] as String)
@@ -79,6 +84,7 @@ class Usuario {
       'id_pessoa': idPessoa,
       'nome_pessoa': nomePessoa,
       'id_grupo': grupo?.idGrupo,
+      'nome_grupo': grupo?.nome,
       'synced': synced ? 1 : 0,
       'updated_at': updatedAt?.toIso8601String(),
     };

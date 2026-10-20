@@ -49,6 +49,24 @@ class Formatters {
     return value;
   }
 
+  /// Remove pontuações e caracteres não numéricos de CPF/CNPJ
+  static String cleanCpfCnpj(String value) {
+    return value.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  /// Formata CEP (00000-000)
+  static String formatCep(String cep) {
+    final numbers = cep.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numbers.length > 8) {
+      final truncated = numbers.substring(0, 8);
+      return '${truncated.substring(0, 5)}-${truncated.substring(5)}';
+    }
+    if (numbers.length > 5) {
+      return '${numbers.substring(0, 5)}-${numbers.substring(5)}';
+    }
+    return numbers;
+  }
+
   /// Formata telefone ((00) 00000-0000 ou (00) 0000-0000)
   static String formatPhone(String phone) {
     final numbers = phone.replaceAll(RegExp(r'[^0-9]'), '');

@@ -71,7 +71,13 @@ class _AnimalFormViewState extends State<AnimalFormView> {
         : AppConstants.statusAtivo;
 
     final idPropriedade = _args?.idPropriedade ?? 0;
-    _idPropriedade.value = idPropriedade > 0 ? idPropriedade : null;
+    if (idPropriedade > 0) {
+      _idPropriedade.value = idPropriedade;
+    } else if (_controller.selectedPropriedadeId.value != null) {
+      _idPropriedade.value = _controller.selectedPropriedadeId.value;
+    } else {
+      _idPropriedade.value = null;
+    }
 
     final idRaca = _args?.idRaca ?? 0;
     _idRaca.value = idRaca > 0 ? idRaca : null;

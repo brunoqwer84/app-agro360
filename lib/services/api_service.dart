@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
@@ -13,6 +14,11 @@ import '../models/pesagem.dart';
 import '../models/vacinacao.dart';
 import '../models/pessoa.dart';
 import '../models/usuario.dart';
+import '../models/lancamento_financeiro.dart';
+import '../models/balanco_financeiro.dart';
+import '../models/categoria_financeira.dart';
+import '../models/compra_despesa.dart';
+import '../models/leitura_nota_result.dart';
 
 /// Service para comunicação com a API REST
 class ApiService {
@@ -354,6 +360,32 @@ class ApiService {
   Future<List<Pessoa>> getPessoasAtivas() async {
     try {
       final response = await _dio.get(AppConfig.pessoasAtivas);
+      return (response.data as List)
+          .map((json) => Pessoa.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Lista clientes ativos do grupo
+  /// GET /api/pessoa/clientes
+  Future<List<Pessoa>> getClientesAtivos() async {
+    try {
+      final response = await _dio.get(AppConfig.clientes);
+      return (response.data as List)
+          .map((json) => Pessoa.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Lista fornecedores ativos do grupo
+  /// GET /api/pessoa/fornecedores
+  Future<List<Pessoa>> getFornecedoresAtivos() async {
+    try {
+      final response = await _dio.get(AppConfig.fornecedores);
       return (response.data as List)
           .map((json) => Pessoa.fromJson(json))
           .toList();
@@ -880,6 +912,380 @@ class ApiService {
     }
   }
 
+  // ========== FINANCEIRO ==========
+
+  /// Lista lançamentos com filtros opcionais
+  /// GET /api/financeiro
+  Future<List<LancamentoFinanceiro>> getAllLancamentos({
+    String? tipo,
+    String? status,
+    int? idManejo,
+    DateTime? dataInicio,
+    DateTime? dataFim,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (tipo != null && tipo.isNotEmpty) queryParams['tipo'] = tipo;
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (idManejo != null) queryParams['idManejo'] = idManejo;
+      if (dataInicio != null) {
+        queryParams['dataInicio'] = _formatDateIso(dataInicio);
+      }
+      if (dataFim != null) {
+        queryParams['dataFim'] = _formatDateIso(dataFim);
+      }
+
+      final response = await _dio.get(
+        AppConfig.financeiro,
+        queryParameters: queryParams,
+      );
+      return (response.data as List)
+          .map((json) => LancamentoFinanceiro.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca lançamento por ID
+  /// GET /api/financeiro/{id}
+  Future<LancamentoFinanceiro> getLancamentoById(int id) async {
+    try {
+      final response = await _dio.get('${AppConfig.financeiro}/$id');
+      return LancamentoFinanceiro.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Cria lançamento financeiro
+  /// POST /api/financeiro
+  Future<LancamentoFinanceiro> createLancamento(
+      LancamentoFinanceiro lancamento) async {
+    try {
+      final response = await _dio.post(
+        AppConfig.financeiro,
+        data: lancamento.toJson(),
+      );
+      return LancamentoFinanceiro.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Atualiza lançamento financeiro
+  /// PUT /api/financeiro/{id}
+  Future<LancamentoFinanceiro> updateLancamento(
+      int id, LancamentoFinanceiro lancamento) async {
+    try {
+      final response = await _dio.put(
+        '${AppConfig.financeiro}/$id',
+        data: lancamento.toJson(),
+      );
+      return LancamentoFinanceiro.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Marca lançamento como pago
+  /// PATCH /api/financeiro/{id}/pagar
+  Future<LancamentoFinanceiro> marcarLancamentoComoPago(int id,
+      {DateTime? dataPagamento}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (dataPagamento != null) {
+        queryParams['dataPagamento'] = _formatDateIso(dataPagamento);
+      }
+      final response = await _dio.patch(
+        '${AppConfig.financeiro}/$id/pagar',
+        queryParameters: queryParams,
+      );
+      return LancamentoFinanceiro.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Deleta lançamento financeiro
+  /// DELETE /api/financeiro/{id}
+  Future<void> deleteLancamento(int id) async {
+    try {
+      await _dio.delete('${AppConfig.financeiro}/$id');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Obtém balanço financeiro do exercício/período
+  /// GET /api/financeiro/balanco
+  Future<BalancoFinanceiro> getBalancoFinanceiro({
+    DateTime? dataInicio,
+    DateTime? dataFim,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (dataInicio != null) {
+        queryParams['dataInicio'] = _formatDateIso(dataInicio);
+      }
+      if (dataFim != null) {
+        queryParams['dataFim'] = _formatDateIso(dataFim);
+      }
+
+      final response = await _dio.get(
+        AppConfig.financeiroBalanco,
+        queryParameters: queryParams,
+      );
+      return BalancoFinanceiro.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // ========== CATEGORIAS FINANCEIRAS ==========
+
+  /// Lista categorias financeiras com filtros opcionais
+  /// GET /api/financeiro/categorias
+  Future<List<CategoriaFinanceira>> getAllCategoriasFinanceiras({
+    String? tipo,
+    bool apenasAtivos = false,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (tipo != null && tipo.isNotEmpty) queryParams['tipo'] = tipo;
+      if (apenasAtivos) queryParams['apenasAtivos'] = true;
+
+      final response = await _dio.get(
+        AppConfig.categoriasFinanceiras,
+        queryParameters: queryParams,
+      );
+      return (response.data as List)
+          .map((json) => CategoriaFinanceira.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca categoria financeira por ID
+  /// GET /api/financeiro/categorias/{id}
+  Future<CategoriaFinanceira> getCategoriaFinanceiraById(int id) async {
+    try {
+      final response = await _dio.get('${AppConfig.categoriasFinanceiras}/$id');
+      return CategoriaFinanceira.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Cria categoria financeira
+  /// POST /api/financeiro/categorias
+  Future<CategoriaFinanceira> createCategoriaFinanceira(
+      CategoriaFinanceira categoria) async {
+    try {
+      final response = await _dio.post(
+        AppConfig.categoriasFinanceiras,
+        data: categoria.toJson(),
+      );
+      return CategoriaFinanceira.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Atualiza categoria financeira
+  /// PUT /api/financeiro/categorias/{id}
+  Future<CategoriaFinanceira> updateCategoriaFinanceira(
+      int id, CategoriaFinanceira categoria) async {
+    try {
+      final response = await _dio.put(
+        '${AppConfig.categoriasFinanceiras}/$id',
+        data: categoria.toJson(),
+      );
+      return CategoriaFinanceira.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Exclui categoria financeira
+  /// DELETE /api/financeiro/categorias/{id}
+  Future<void> deleteCategoriaFinanceira(int id) async {
+    try {
+      await _dio.delete('${AppConfig.categoriasFinanceiras}/$id');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // ========== COMPRAS E DESPESAS ==========
+
+  /// Lista compras e despesas
+  /// GET /api/compra-despesa
+  Future<List<CompraDespesa>> getComprasDespesas({
+    int? idFornecedor,
+    int? idPropriedade,
+    int? idCategoria,
+    String? status,
+    DateTime? inicio,
+    DateTime? fim,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (idFornecedor != null) queryParams['idFornecedor'] = idFornecedor;
+      if (idPropriedade != null) queryParams['idPropriedade'] = idPropriedade;
+      if (idCategoria != null) queryParams['idCategoria'] = idCategoria;
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (inicio != null) queryParams['inicio'] = _formatDateIso(inicio);
+      if (fim != null) queryParams['fim'] = _formatDateIso(fim);
+
+      final response = await _dio.get(
+        AppConfig.compraDespesa,
+        queryParameters: queryParams,
+      );
+      return (response.data as List)
+          .map((json) => CompraDespesa.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Busca compra/despesa por ID
+  /// GET /api/compra-despesa/{id}
+  Future<CompraDespesa> getCompraDespesaById(int id) async {
+    try {
+      final response = await _dio.get('${AppConfig.compraDespesa}/$id');
+      return CompraDespesa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Registra nova compra/despesa
+  /// POST /api/compra-despesa
+  Future<CompraDespesa> createCompraDespesa(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post(
+        AppConfig.compraDespesa,
+        data: data,
+      );
+      return CompraDespesa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Atualiza compra/despesa existente
+  /// PUT /api/compra-despesa/{id}
+  Future<CompraDespesa> updateCompraDespesa(
+      int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put(
+        '${AppConfig.compraDespesa}/$id',
+        data: data,
+      );
+      return CompraDespesa.fromJson(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Exclui compra/despesa
+  /// DELETE /api/compra-despesa/{id}
+  Future<void> deleteCompraDespesa(int id) async {
+    try {
+      await _dio.delete('${AppConfig.compraDespesa}/$id');
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  /// Envia imagem compactada da nota fiscal para OCR inteligente via Gemini
+  /// POST /api/despesas/ler-nota
+  Future<LeituraNotaResult> lerNotaFiscal(File imageFile) async {
+    try {
+      final fileName = imageFile.path.split('/').last;
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: fileName,
+        ),
+      });
+
+      final response = await _dio.post(
+        AppConfig.despesaLerNota,
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+          sendTimeout: const Duration(seconds: 45),
+          receiveTimeout: const Duration(seconds: 45),
+        ),
+      );
+
+      return LeituraNotaResult.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  String _formatDateIso(DateTime d) {
+    return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  // ========== MUNICÍPIOS (BANCO DE DADOS) ==========
+
+  final Map<String, List<String>> _cacheMunicipios = {};
+
+  /// Busca municípios diretamente da tabela 'municipio' do banco de dados Agro360
+  Future<List<String>> getMunicipiosPorUf(String uf, {String? busca}) async {
+    final cleanUf = uf.trim().toUpperCase();
+    if (cleanUf.length != 2) return [];
+
+    // Retorna do cache em memória caso a UF já tenha sido carregada sem busca específica
+    if ((busca == null || busca.trim().isEmpty) &&
+        _cacheMunicipios.containsKey(cleanUf) &&
+        _cacheMunicipios[cleanUf]!.isNotEmpty) {
+      return _cacheMunicipios[cleanUf]!;
+    }
+
+    try {
+      final queryParams = <String, dynamic>{
+        'uf': cleanUf,
+      };
+      if (busca != null && busca.trim().isNotEmpty) {
+        queryParams['busca'] = busca.trim();
+      }
+
+      final response = await _dio.get(
+        AppConfig.municipios,
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200 && response.data is List) {
+        final list = (response.data as List).map((item) {
+          if (item is Map) {
+            return (item['nome'] as String? ?? '').trim();
+          }
+          return item.toString().trim();
+        }).where((nome) => nome.isNotEmpty).toList();
+
+        if (busca == null || busca.trim().isEmpty) {
+          _cacheMunicipios[cleanUf] = list;
+        }
+
+        return list;
+      }
+      return [];
+    } on DioException catch (e) {
+      // Se já temos cache da UF, retorna em caso de oscilação
+      if (_cacheMunicipios.containsKey(cleanUf)) {
+        return _cacheMunicipios[cleanUf]!;
+      }
+      throw _handleError(e);
+    }
+  }
+
   // ========== TRATAMENTO DE ERROS ==========
 
   /// Trata erros da API e retorna mensagem apropriada
@@ -892,7 +1298,7 @@ class ApiService {
       String extractMessage(dynamic data) {
         if (data is String) return data;
         if (data is Map) {
-          // Spring Boot validation errors
+          if (data.containsKey('mensagem')) return data['mensagem'].toString();
           if (data.containsKey('message')) return data['message'].toString();
           if (data.containsKey('error')) return data['error'].toString();
           if (data.containsKey('errors')) {
@@ -917,6 +1323,14 @@ class ApiService {
       switch (statusCode) {
         case 400:
           return extractMessage(data);
+        case 422:
+          return extractMessage(data).isEmpty
+              ? 'Não foi possível processar a imagem da nota fiscal'
+              : extractMessage(data);
+        case 429:
+          return extractMessage(data).isEmpty
+              ? 'Limite de leituras atingido, tente mais tarde'
+              : extractMessage(data);
         case 401:
           return extractMessage(data).isEmpty
               ? 'Credenciais inválidas ou token expirado'

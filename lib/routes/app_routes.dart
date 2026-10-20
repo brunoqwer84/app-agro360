@@ -17,5 +17,16 @@ class AppRoutes {
   static const String vacinacoesForm = '/vacinacoes/form';
   static const String grupos = '/grupos';
   static const String gruposForm = '/grupos/form';
+  static const String pessoas = '/pessoas';
+  static const String pessoasForm = '/pessoas/form';
+  static const String financeiro = '/financeiro';
+  static const String financeiroForm = '/financeiro/form';
+  static const String categoriasFinanceiras = '/financeiro/categorias';
+  static const String categoriasFinanceirasForm = '/financeiro/categorias/form';
+  static const String clientesFornecedores = '/financeiro/contatos';
+  static const String clientesFornecedoresForm = '/financeiro/contatos/form';
+  static const String compraDespesa = '/financeiro/compra-despesa';
+  static const String compraDespesaForm = '/financeiro/compra-despesa/form';
+  static const String compraDespesaRevisao = '/financeiro/compra-despesa/revisao';
   static const String home = '/home';
 }

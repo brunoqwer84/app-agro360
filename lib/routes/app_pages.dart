@@ -1,6 +1,15 @@
 import 'package:get/get.dart';
 import '../views/grupo_form_view.dart';
 import '../views/grupo_list_view.dart';
+import '../views/pessoa_list_view.dart';
+import '../views/pessoa_form_view.dart';
+import '../views/financeiro_list_view.dart';
+import '../views/financeiro_form_view.dart';
+import '../views/categoria_financeira_list_view.dart';
+import '../views/categoria_financeira_form_view.dart';
+import '../views/compra_despesa_list_view.dart';
+import '../views/compra_despesa_form_view.dart';
+import '../views/compra_despesa_revisao_view.dart';
 import '../views/splash_view.dart';
 import '../views/login_view.dart';
 import '../views/register_view.dart';
@@ -108,6 +117,61 @@ class AppPages {
     GetPage(
       name: AppRoutes.gruposForm,
       page: () => const GrupoFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.pessoas,
+      page: () => const PessoaListView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.pessoasForm,
+      page: () => const PessoaFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.financeiro,
+      page: () => const FinanceiroListView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.financeiroForm,
+      page: () => const FinanceiroFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.categoriasFinanceiras,
+      page: () => const CategoriaFinanceiraListView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.categoriasFinanceirasForm,
+      page: () => const CategoriaFinanceiraFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.clientesFornecedores,
+      page: () => const PessoaListView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.clientesFornecedoresForm,
+      page: () => const PessoaFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.compraDespesa,
+      page: () => const CompraDespesaListView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.compraDespesaForm,
+      page: () => const CompraDespesaFormView(),
+      binding: InitialBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.compraDespesaRevisao,
+      page: () => const CompraDespesaRevisaoView(),
       binding: InitialBinding(),
     ),
     GetPage(

@@ -141,4 +141,23 @@ class Animal {
     final diferenca = hoje.difference(dataNascimento!);
     return (diferenca.inDays / 365).floor();
   }
+
+  /// Helpers de tipo de produção
+  bool get isCorte => (tipoProducao ?? '').toUpperCase() == 'CORTE';
+  bool get isLeite => (tipoProducao ?? '').toUpperCase() == 'LEITE';
+  bool get isMisto => (tipoProducao ?? '').toUpperCase() == 'MISTO';
+  bool get isAtivo => (status ?? 'ATIVO').toUpperCase() == 'ATIVO';
+  bool get isMacho => sexo.toUpperCase() == 'M';
+  bool get isFemea => sexo.toUpperCase() == 'F';
+
+  /// Descrição amigável do tipo de produção
+  String get tipoProducaoDescricao {
+    if (isCorte) return 'Corte';
+    if (isLeite) return 'Leite';
+    if (isMisto) return 'Misto';
+    if (tipoProducao != null && tipoProducao!.trim().isNotEmpty) {
+      return tipoProducao!;
+    }
+    return 'Geral';
+  }
 }

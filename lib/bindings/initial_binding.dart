@@ -10,6 +10,9 @@ import '../controllers/animal_controller.dart';
 import '../controllers/manejo_controller.dart';
 import '../controllers/pesagem_controller.dart';
 import '../controllers/vacinacao_controller.dart';
+import '../controllers/pessoa_controller.dart';
+import '../controllers/financeiro_controller.dart';
+import '../controllers/categoria_financeira_controller.dart';
 
 /// Binding inicial para injeção de dependências globais
 class InitialBinding extends Bindings {
@@ -38,5 +41,11 @@ class InitialBinding extends Bindings {
     Get.lazyPut<ManejoController>(() => ManejoController(), fenix: true);
     Get.lazyPut<PesagemController>(() => PesagemController(), fenix: true);
     Get.lazyPut<VacinacaoController>(() => VacinacaoController(), fenix: true);
+    Get.lazyPut<PessoaController>(() => PessoaController(), fenix: true);
+    Get.lazyPut<FinanceiroController>(() => FinanceiroController(),
+        fenix: true);
+    Get.lazyPut<CategoriaFinanceiraController>(
+        () => CategoriaFinanceiraController(),
+        fenix: true);
   }
 }

@@ -39,11 +39,6 @@ class SidebarNavigation extends StatelessWidget {
             label: 'Propriedades',
             route: AppRoutes.propriedades,
             index: 2),
-        _SidebarItemData(
-            icon: Icons.people_outline,
-            label: 'Pessoas',
-            route: null,
-            index: 3),
       ],
     ),
     _SidebarSection(
@@ -53,27 +48,52 @@ class SidebarNavigation extends StatelessWidget {
             icon: Icons.pets_outlined,
             label: 'Animais',
             route: AppRoutes.animais,
-            index: 4),
+            index: 3),
         _SidebarItemData(
             icon: Icons.category_outlined,
             label: 'Raças',
             route: AppRoutes.racas,
-            index: 5),
+            index: 4),
         _SidebarItemData(
             icon: Icons.assignment_outlined,
             label: 'Manejos',
             route: AppRoutes.manejos,
-            index: 6),
+            index: 5),
         _SidebarItemData(
             icon: Icons.monitor_weight_outlined,
             label: 'Pesagens',
             route: AppRoutes.pesagens,
-            index: 7),
+            index: 6),
         _SidebarItemData(
             icon: Icons.medical_services_outlined,
             label: 'Vacinações',
             route: AppRoutes.vacinacoes,
+            index: 7),
+      ],
+    ),
+    _SidebarSection(
+      title: 'Financeiro',
+      items: [
+        _SidebarItemData(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Contas & Balanço',
+            route: AppRoutes.financeiro,
             index: 8),
+        _SidebarItemData(
+            icon: Icons.shopping_bag_outlined,
+            label: 'Compras & Despesas',
+            route: AppRoutes.compraDespesa,
+            index: 9),
+        _SidebarItemData(
+            icon: Icons.category_outlined,
+            label: 'Categorias',
+            route: AppRoutes.categoriasFinanceiras,
+            index: 10),
+        _SidebarItemData(
+            icon: Icons.people_outline,
+            label: 'Clientes & Fornecedores',
+            route: AppRoutes.pessoas,
+            index: 11),
       ],
     ),
   ];

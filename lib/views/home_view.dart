@@ -4,16 +4,36 @@ import '../controllers/auth_controller.dart';
 import '../controllers/sync_controller.dart';
 import '../controllers/propriedade_controller.dart';
 import '../controllers/animal_controller.dart';
+import '../controllers/manejo_controller.dart';
+import '../controllers/financeiro_controller.dart';
 import '../routes/app_routes.dart';
 import '../utils/app_colors.dart';
-import '../utils/cow_head_icon.dart';
+import '../utils/formatters.dart';
 import '../widgets/sidebar_navigation.dart';
 import '../widgets/app_components.dart';
 import '../theme/app_theme.dart';
 
-/// Tela Home - Layout com sidebar lateral (desktop) ou drawer (mobile)
+/// Tela Home - Layout limpo e essencial com foco na operação do produtor
 class HomeView extends GetView<AuthController> {
   const HomeView({super.key});
+
+  Future<void> _refreshAll() async {
+    final syncController = Get.find<SyncController>();
+    final futures = <Future>[
+      syncController.syncAll(),
+      Get.find<PropriedadeController>().loadAll(),
+      Get.find<AnimalController>().loadAll(),
+    ];
+
+    if (Get.isRegistered<ManejoController>()) {
+      futures.add(Get.find<ManejoController>().loadAll());
+    }
+    if (Get.isRegistered<FinanceiroController>()) {
+      futures.add(Get.find<FinanceiroController>().loadAll());
+    }
+
+    await Future.wait(futures);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,48 +55,17 @@ class HomeView extends GetView<AuthController> {
   Widget _buildDesktopLayout(
       BuildContext context, SyncController syncController) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
-          // Sidebar
-          const SidebarNavigation(
-            selectedIndex: 0,
-          ),
-
-          // Conteúdo principal
+          const SidebarNavigation(selectedIndex: 0),
           Expanded(
             child: Scaffold(
-              backgroundColor: AppColors.surface,
+              backgroundColor: AppColors.background,
               appBar: _buildAppBar(syncController),
               body: RefreshIndicator(
-                onRefresh: () async {
-                  await Future.wait([
-                    syncController.syncAll(),
-                    Get.find<PropriedadeController>().loadAll(),
-                    Get.find<AnimalController>().loadAll(),
-                  ]);
-                },
-                child: CustomScrollView(
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          // Informações do usuário
-                          _buildUserProfile(context),
-                          const SizedBox(height: AppSpacing.xl),
-
-                          // Cards de resumo
-                          _buildSummaryCards(),
-                          const SizedBox(height: AppSpacing.xl),
-
-                          // Ações rápidas
-                          _buildQuickActions(context),
-                        ]),
-                      ),
-                    ),
-                  ],
-                ),
+                onRefresh: _refreshAll,
+                child: _buildHomeBody(context),
               ),
             ),
           ),
@@ -88,50 +77,21 @@ class HomeView extends GetView<AuthController> {
   Widget _buildMobileLayout(
       BuildContext context, SyncController syncController) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.background,
       appBar: _buildAppBar(syncController),
-      drawer: const SidebarNavigation(
-        selectedIndex: 0,
-      ),
+      drawer: const SidebarNavigation(selectedIndex: 0),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.wait([
-            syncController.syncAll(),
-            Get.find<PropriedadeController>().loadAll(),
-            Get.find<AnimalController>().loadAll(),
-          ]);
-        },
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Informações do usuário
-                  _buildUserProfile(context),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Cards de resumo
-                  _buildSummaryCards(),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // Ações rápidas
-                  _buildQuickActions(context),
-                ]),
-              ),
-            ),
-          ],
-        ),
+        onRefresh: _refreshAll,
+        child: _buildHomeBody(context),
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar(SyncController syncController) {
     return AppBar(
-      title: const Text('Dashboard'),
+      title: const Text('Agro360'),
       elevation: 0,
       actions: [
-        // Botão de sincronização
         Obx(() {
           return IconButton(
             icon: syncController.isSyncing.value
@@ -152,8 +112,8 @@ class HomeView extends GetView<AuthController> {
                 ? null
                 : () => syncController.syncAll(),
             tooltip: syncController.isConnected.value
-                ? 'Online - Sincronizar'
-                : 'Offline',
+                ? 'Sincronizado na nuvem'
+                : 'Modo offline',
           );
         }),
         const SizedBox(width: AppSpacing.sm),
@@ -161,6 +121,40 @@ class HomeView extends GetView<AuthController> {
     );
   }
 
+  Widget _buildHomeBody(BuildContext context) {
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              // 1. Cabeçalho do Produtor (Saudação limpa)
+              _buildUserProfile(context),
+              const SizedBox(height: AppSpacing.md),
+
+              // 2. Apontamentos Rápidos (1-tap para novos registros)
+              _buildQuickShortcuts(context),
+              const SizedBox(height: AppSpacing.lg),
+
+              // 3. Indicadores Operacionais Essenciais
+              _buildKeyMetrics(context),
+              const SizedBox(height: AppSpacing.xl),
+
+              // 4. Módulos Essenciais de Operação
+              _buildEssentialModules(context),
+              const SizedBox(height: AppSpacing.xl),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Cabeçalho acolhedor com nome do usuário e grupo ativo
   Widget _buildUserProfile(BuildContext context) {
     return Obx(() {
       final user = controller.currentUser.value;
@@ -177,197 +171,237 @@ class HomeView extends GetView<AuthController> {
           : 'Produtor';
 
       return Container(
+        padding: const EdgeInsets.all(AppSpacing.md + 2),
         decoration: BoxDecoration(
           gradient: AppColors.heroGradient,
           borderRadius: BorderRadius.circular(AppRadius.xl),
           boxShadow: const [
             BoxShadow(
               color: AppColors.shadowMedium,
-              blurRadius: 16,
-              offset: Offset(0, 6),
+              blurRadius: 12,
+              offset: Offset(0, 4),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            children: [
-              // Avatar com borda destacada
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    width: 2.5,
-                  ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              child: Text(
+                user.nomePessoa.isNotEmpty
+                    ? user.nomePessoa[0].toUpperCase()
+                    : 'P',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  child: Text(
-                    user.nomePessoa.isNotEmpty
-                        ? user.nomePessoa[0].toUpperCase()
-                        : '?',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$greeting, $firstName',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.2,
                     ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-
-              // Informações do produtor
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$greeting, $firstName 👋',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.2,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: AppSpacing.xs,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        // Grupo / Empresa
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.business_rounded,
+                          size: 13, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          user.grupo?.nome ?? 'Agropecuária',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.round),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.business_rounded,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                user.grupo?.nome ?? 'Agro360',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        // Badge Admin
-                        if (user.isAdmin)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFDE68A),
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.round),
-                            ),
-                            child: const Text(
-                              'Admin',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF92400E),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     });
   }
 
-  Widget _buildSummaryCards() {
-    return Obx(() {
-      final user = controller.currentUser.value;
-      final syncController = Get.find<SyncController>();
-      final propriedadeController = Get.find<PropriedadeController>();
-      final animalController = Get.find<AnimalController>();
+  /// Atalhos diretos para novos lançamentos rápidos no campo
+  Widget _buildQuickShortcuts(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Text(
+            'Novo Registro Rápido',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: _buildShortcutButton(
+                label: 'Manejo',
+                icon: Icons.assignment_add,
+                color: AppColors.categoryOrange,
+                onTap: () => Get.toNamed(AppRoutes.manejosForm),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildShortcutButton(
+                label: 'Animal',
+                icon: Icons.pets_rounded,
+                color: AppColors.primary,
+                onTap: () => Get.toNamed(AppRoutes.animaisForm),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _buildShortcutButton(
+                label: 'Financeiro',
+                icon: Icons.attach_money_rounded,
+                color: AppColors.success,
+                onTap: () => Get.toNamed(AppRoutes.financeiroForm),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
-      final propriedadesCount = propriedadeController.properties.length;
+  Widget _buildShortcutButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: color.withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 4 Indicadores Essenciais da Operação (Rebanho, Manejos, Saldo Financeiro, Fazendas)
+  Widget _buildKeyMetrics(BuildContext context) {
+    return Obx(() {
+      final animalController = Get.find<AnimalController>();
+      final propriedadeController = Get.find<PropriedadeController>();
+
       final animaisCount = animalController.animais.length;
-      final grupoNome = user?.grupo?.nome ?? 'N/A';
-      final isConnected = syncController.isConnected.value;
+      final propriedadesCount = propriedadeController.properties.length;
+
+      final manejoCount = Get.isRegistered<ManejoController>()
+          ? Get.find<ManejoController>().manejos.length
+          : 0;
+
+      final balanco = Get.isRegistered<FinanceiroController>()
+          ? Get.find<FinanceiroController>().balanco.value
+          : null;
+      final saldoFinanceiro = balanco?.saldo ?? 0.0;
+      final isSaldoPositivo = saldoFinanceiro >= 0;
 
       return LayoutBuilder(
         builder: (context, constraints) {
           final crossAxisCount =
               constraints.maxWidth < AppBreakpoints.tablet ? 2 : 4;
+
           return GridView(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
-              mainAxisExtent: 136,
+              mainAxisExtent: 108,
             ),
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _SummaryCard(
+              _MetricCard(
+                title: 'Rebanho',
+                value: '$animaisCount',
+                subtitle: animaisCount == 1 ? '1 animal' : '$animaisCount animais',
+                icon: Icons.pets_rounded,
+                color: AppColors.primary,
+                onTap: () => Get.toNamed(AppRoutes.animais),
+              ),
+              _MetricCard(
+                title: 'Manejos',
+                value: '$manejoCount',
+                subtitle: 'Eventos de campo',
+                icon: Icons.assignment_outlined,
+                color: AppColors.categoryOrange,
+                onTap: () => Get.toNamed(AppRoutes.manejos),
+              ),
+              _MetricCard(
+                title: 'Balanço',
+                value: Formatters.formatCurrency(saldoFinanceiro),
+                subtitle: isSaldoPositivo ? 'Saldo positivo' : 'Saldo devedor',
+                icon: Icons.account_balance_wallet_outlined,
+                color: isSaldoPositivo ? AppColors.success : AppColors.error,
+                onTap: () => Get.toNamed(AppRoutes.financeiro),
+              ),
+              _MetricCard(
                 title: 'Propriedades',
-                value: propriedadesCount.toString(),
+                value: '$propriedadesCount',
                 subtitle: propriedadesCount == 1
                     ? '1 fazenda ativa'
                     : '$propriedadesCount fazendas',
-                icon: Icons.landscape_rounded,
+                icon: Icons.landscape_outlined,
                 color: AppColors.categoryTeal,
                 onTap: () => Get.toNamed(AppRoutes.propriedades),
-              ),
-              _SummaryCard(
-                title: 'Animais',
-                value: animaisCount.toString(),
-                subtitle: animaisCount == 1
-                    ? '1 animal ativo'
-                    : '$animaisCount no rebanho',
-                icon: Icons.pets_rounded,
-                color: AppColors.categoryBrown,
-                onTap: () => Get.toNamed(AppRoutes.animais),
-              ),
-              _SummaryCard(
-                title: 'Grupo / Empresa',
-                value: grupoNome,
-                subtitle: 'Unidade produtiva',
-                icon: Icons.business_rounded,
-                color: AppColors.categoryPurple,
-                onTap: () => Get.toNamed(AppRoutes.grupos),
-              ),
-              _SummaryCard(
-                title: 'Sincronização',
-                value: isConnected ? 'Online' : 'Offline',
-                subtitle: isConnected ? 'Dados na nuvem' : 'Modo local',
-                icon: isConnected
-                    ? Icons.cloud_done_rounded
-                    : Icons.cloud_off_rounded,
-                color: isConnected ? AppColors.success : AppColors.error,
-                badgeType:
-                    isConnected ? AppStatusType.active : AppStatusType.error,
-                onTap: () => syncController.syncAll(),
               ),
             ],
           );
@@ -376,113 +410,69 @@ class HomeView extends GetView<AuthController> {
     });
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  /// 4 Módulos Centrais (Sem poluição de cadastros auxiliares)
+  Widget _buildEssentialModules(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.xs),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: const Icon(
-                Icons.grid_view_rounded,
-                color: AppColors.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
+            Icon(Icons.dashboard_customize_outlined,
+                size: 18, color: AppColors.primary),
+            SizedBox(width: 8),
             Text(
-              'Módulos & Gestão',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+              'Módulos Principais',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
-            final crossAxisCount = constraints.maxWidth < AppBreakpoints.mobile
-                ? 2
-                : constraints.maxWidth < AppBreakpoints.tablet
-                    ? 3
-                    : 4;
+            final crossAxisCount =
+                constraints.maxWidth < AppBreakpoints.tablet ? 1 : 2;
+
             return GridView(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: AppSpacing.md,
                 mainAxisSpacing: AppSpacing.md,
-                mainAxisExtent: 88,
+                mainAxisExtent: 76,
               ),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _ActionCard(
-                  icon: Icons.landscape_rounded,
-                  title: 'Propriedades',
-                  subtitle: 'Fazendas & pastos',
-                  color: AppColors.categoryTeal,
-                  onTap: () => Get.toNamed(AppRoutes.propriedades),
-                ),
-                _ActionCard(
-                  icon: Icons.pets_rounded,
-                  title: 'Animais',
-                  subtitle: 'Rebanho & lotes',
-                  color: AppColors.categoryBrown,
-                  onTap: () => Get.toNamed(AppRoutes.animais),
-                ),
-                _ActionCard(
-                  icon: Icons.category_rounded,
-                  title: 'Raças',
-                  subtitle: 'Genética & raças',
-                  color: AppColors.categoryAmber,
-                  onTap: () => Get.toNamed(AppRoutes.racas),
-                  customIcon: const CowHeadIcon(size: 24),
-                ),
-                _ActionCard(
-                  icon: Icons.assignment_rounded,
-                  title: 'Manejos',
-                  subtitle: 'Eventos de campo',
+                _ModuleCard(
+                  title: 'Manejos & Sanidade',
+                  subtitle: 'Manejos de campo, pesagens e vacinações',
+                  icon: Icons.agriculture_rounded,
                   color: AppColors.categoryOrange,
                   onTap: () => Get.toNamed(AppRoutes.manejos),
                 ),
-                _ActionCard(
-                  icon: Icons.monitor_weight_rounded,
-                  title: 'Pesagens',
-                  subtitle: 'Ganho de peso',
-                  color: AppColors.categoryBlue,
-                  onTap: () => Get.toNamed(AppRoutes.pesagens),
+                _ModuleCard(
+                  title: 'Controle do Rebanho',
+                  subtitle: 'Fichas dos animais, lotes e raças',
+                  icon: Icons.pets_rounded,
+                  color: AppColors.primary,
+                  onTap: () => Get.toNamed(AppRoutes.animais),
                 ),
-                _ActionCard(
-                  icon: Icons.medical_services_rounded,
-                  title: 'Vacinações',
-                  subtitle: 'Sanidade & doses',
-                  color: AppColors.categoryRed,
-                  onTap: () => Get.toNamed(AppRoutes.vacinacoes),
+                _ModuleCard(
+                  title: 'Gestão Financeira',
+                  subtitle: 'Contas a pagar, a receber e balanço',
+                  icon: Icons.account_balance_wallet_rounded,
+                  color: AppColors.success,
+                  onTap: () => Get.toNamed(AppRoutes.financeiro),
                 ),
-                _ActionCard(
-                  icon: Icons.business_rounded,
-                  title: 'Grupos',
-                  subtitle: 'Empresas & filiais',
-                  color: AppColors.categoryPurple,
-                  onTap: () => Get.toNamed(AppRoutes.grupos),
-                ),
-                _ActionCard(
-                  icon: Icons.people_rounded,
-                  title: 'Pessoas',
-                  subtitle: 'Equipe & contatos',
-                  color: AppColors.info,
-                  onTap: () => Get.snackbar(
-                    'Em desenvolvimento',
-                    'Funcionalidade em breve',
-                    backgroundColor: AppColors.info.withValues(alpha: 0.1),
-                    colorText: AppColors.info,
-                  ),
+                _ModuleCard(
+                  title: 'Fazendas & Pastos',
+                  subtitle: 'Propriedades rurais e divisões',
+                  icon: Icons.landscape_rounded,
+                  color: AppColors.categoryTeal,
+                  onTap: () => Get.toNamed(AppRoutes.propriedades),
                 ),
               ],
             );
@@ -493,32 +483,26 @@ class HomeView extends GetView<AuthController> {
   }
 }
 
-/// Card de resumo métrico do dashboard
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
+/// Card de Métrica Operacional compacto e limpo
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
     required this.title,
     required this.value,
+    required this.subtitle,
     required this.icon,
     required this.color,
-    this.subtitle,
-    this.badgeType,
-    this.onTap,
+    required this.onTap,
   });
 
   final String title;
   final String value;
+  final String subtitle;
   final IconData icon;
   final Color color;
-  final String? subtitle;
-  final AppStatusType? badgeType;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.extension<AppColorScheme>()!;
-    final textTheme = theme.extension<AppTextTheme>()!;
-
     return AppCard(
       padding: AppSpacing.md,
       onTap: onTap,
@@ -529,27 +513,15 @@ class _SummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
                 ),
-                child: Icon(icon, size: 20, color: color),
               ),
-              if (badgeType != null)
-                AppStatusBadge(
-                  label: value,
-                  type: badgeType!,
-                  size: AppStatusBadgeSize.small,
-                )
-              else
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                ),
+              Icon(icon, size: 18, color: color),
             ],
           ),
           Column(
@@ -557,9 +529,10 @@ class _SummaryCard extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: textTheme.headlineSmall.copyWith(
+                style: TextStyle(
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
+                  color: color,
                   height: 1.1,
                 ),
                 maxLines: 1,
@@ -567,10 +540,10 @@ class _SummaryCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                subtitle ?? title,
-                style: textTheme.labelSmall.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textHint,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -583,32 +556,26 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-/// Card de ação rápida com design refinado
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
+/// Card de Módulo Essencial limpo e refinado
+class _ModuleCard extends StatelessWidget {
+  const _ModuleCard({
     required this.title,
     required this.subtitle,
+    required this.icon,
     required this.color,
     required this.onTap,
-    this.customIcon,
   });
 
-  final IconData icon;
   final String title;
   final String subtitle;
+  final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  final Widget? customIcon;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.extension<AppColorScheme>()!;
-    final textTheme = theme.extension<AppTextTheme>()!;
-
     return AppCard(
-      padding: AppSpacing.sm + 2,
+      padding: AppSpacing.md,
       onTap: onTap,
       child: Row(
         children: [
@@ -619,16 +586,9 @@ class _ActionCard extends StatelessWidget {
               color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: Center(
-              child: customIcon ??
-                  Icon(
-                    icon,
-                    size: 22,
-                    color: color,
-                  ),
-            ),
+            child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: AppSpacing.sm + 2),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,9 +596,10 @@ class _ActionCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: textTheme.titleSmall.copyWith(
+                  style: const TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -646,9 +607,9 @@ class _ActionCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: textTheme.bodySmall.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                  style: const TextStyle(
                     fontSize: 11,
+                    color: AppColors.textSecondary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -656,10 +617,10 @@ class _ActionCard extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
+          const Icon(
             Icons.chevron_right_rounded,
             size: 18,
-            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            color: AppColors.textHint,
           ),
         ],
       ),

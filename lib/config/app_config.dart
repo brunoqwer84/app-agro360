@@ -30,7 +30,6 @@ class AppConfig {
 
   // Endpoints de autenticação
   static const String authLogin = '/auth/login';
-  static const String authRegister = '/auth/register';
   static const String authFirstAccess = '/auth/first-access';
   static const String authValidate = '/auth/validate';
 
@@ -47,11 +46,13 @@ class AppConfig {
   static const String propriedadesAtivas = '/propriedade/ativo';
   static const String propriedadesMinhas = '/propriedade/minhas';
 
-  // Endpoints de pessoas
+  // Endpoints de pessoas / clientes / fornecedores
   static const String pessoas = '/pessoa';
   static const String pessoasAtivas = '/pessoa/ativo';
   static const String pessoasBuscar = '/pessoa/buscar';
   static const String pessoasPorCpfCnpj = '/pessoa/cpf-cnpj';
+  static const String clientes = '/pessoa/clientes';
+  static const String fornecedores = '/pessoa/fornecedores';
 
   // Endpoints de raças
   static const String racas = '/raca';
@@ -76,6 +77,16 @@ class AppConfig {
   // Endpoints de manejos
   static const String manejos = '/manejo';
   static const String manejosPorPropriedade = '/manejo/propriedade';
+
+  // Endpoints financeiros
+  static const String financeiro = '/financeiro';
+  static const String financeiroBalanco = '/financeiro/balanco';
+  static const String categoriasFinanceiras = '/financeiro/categorias';
+  static const String compraDespesa = '/compra-despesa';
+  static const String despesaLerNota = '/despesas/ler-nota';
+
+  // Endpoints de municípios (base de dados própria)
+  static const String municipios = '/municipio';
 
   // Timeouts
   static const Duration connectionTimeout = Duration(seconds: 30);

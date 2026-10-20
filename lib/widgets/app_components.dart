@@ -267,9 +267,15 @@ class AppCard extends StatelessWidget {
 
     return Container(
       margin: margin,
-      padding: EdgeInsets.all(padding),
-      decoration: decoration,
-      child: child,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Ink(
+          padding: EdgeInsets.all(padding),
+          decoration: decoration,
+          child: child,
+        ),
+      ),
     );
   }
 }
@@ -362,6 +368,7 @@ class AppInput extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.onTap,
     this.suffixText,
+    this.focusNode,
   });
 
   final String label;
@@ -384,6 +391,7 @@ class AppInput extends StatelessWidget {
   final AutovalidateMode autovalidateMode;
   final TextCapitalization textCapitalization;
   final VoidCallback? onTap;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -392,6 +400,7 @@ class AppInput extends StatelessWidget {
 
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
@@ -939,6 +948,8 @@ class AppDropdown<T> extends StatelessWidget {
     this.prefixIcon,
     this.validator,
     this.enabled = true,
+    this.isExpanded = true,
+    this.contentPadding,
   });
 
   final String label;
@@ -950,6 +961,8 @@ class AppDropdown<T> extends StatelessWidget {
   final IconData? prefixIcon;
   final String? Function(T?)? validator;
   final bool enabled;
+  final bool isExpanded;
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -957,6 +970,8 @@ class AppDropdown<T> extends StatelessWidget {
     final colorScheme = theme.extension<AppColorScheme>()!;
 
     return DropdownButtonFormField<T>(
+      key: ValueKey<T?>(value),
+      isExpanded: isExpanded,
       items: items,
       initialValue: value,
       onChanged: enabled ? onChanged : null,
@@ -971,10 +986,11 @@ class AppDropdown<T> extends StatelessWidget {
             : null,
         filled: true,
         fillColor: colorScheme.surfaceVariant,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.md,
-          horizontal: AppSpacing.md,
-        ),
+        contentPadding: contentPadding ??
+            const EdgeInsets.symmetric(
+              vertical: AppSpacing.md,
+              horizontal: AppSpacing.md,
+            ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: colorScheme.outline, width: 1),

@@ -14,8 +14,9 @@ class AppConfig {
     }
 
     if (Platform.isAndroid) {
-      // Android Emulator: usa 10.0.2.2 para acessar localhost do host
-      return 'http://10.0.2.2:8080/api';
+      // Celular físico na mesma rede Wi-Fi do Mac:
+      return 'http://192.168.2.162:8080/api';
+      // Fallback para emulador: return 'http://10.0.2.2:8080/api';
     } else if (Platform.isIOS) {
       // iOS Simulator e dispositivo físico: localhost
       return 'http://localhost:8080/api';
